@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>광고주 회원가입 - 모노라마 광고 관리 시스템</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
+  <link rel="stylesheet" href="/css/common.css">
+  <!-- 카카오 주소 검색 API -->
+  <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+  <style>
+    body { background: linear-gradient(135deg,#eff6ff 0%,#e0e7ff 100%); }
+    .reg-wrap { max-width: 720px; margin: 0 auto; padding: 40px 20px 60px; }
+    .reg-logo { text-align:center; margin-bottom:28px; }
+    .reg-logo h1 { font-size:22px; font-weight:800; color:var(--primary); }
+    .reg-logo p  { font-size:13px; color:var(--gray-500); margin-top:4px; }
+    .section-title {
+      font-size:14px; font-weight:700; color:var(--primary);
+      border-bottom:2px solid var(--primary); padding-bottom:6px;
+      margin-bottom:18px; margin-top:8px;
+    }
+    .form-row   { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    .form-row-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; }
+    @media(max-width:600px) { .form-row, .form-row-3 { grid-template-columns:1fr; } }
+    .input-btn-row { display:flex; gap:8px; }
+    .input-btn-row .form-control { flex:1; }
+    .verify-row { display:flex; gap:8px; }
+    .verify-row .form-control { flex:1; }
+    .pw-strength { height:4px; border-radius:2px; margin-top:6px; transition:all .3s; background:#e5e7eb; }
+    .consent-box {
+      border:1px solid var(--gray-200); border-radius:8px; padding:16px; background:#fafafa;
+    }
+    .consent-box .consent-text {
+      max-height:120px; overflow-y:auto; font-size:12px; color:var(--gray-600); line-height:1.7;
+      background:#fff; border:1px solid var(--gray-200); border-radius:4px;
+      padding:10px; margin:8px 0;
+    }
+    .file-drop {
+      border:2px dashed var(--gray-300); border-radius:8px; padding:28px;
+      text-align:center; color:var(--gray-500); cursor:pointer; transition:all .2s;
+    }
+    .file-drop:hover, .file-drop.drag { border-color:var(--primary); background:#eff6ff; }
+    .file-drop .icon { font-size:32px; display:block; margin-bottom:8px; }
+    .file-selected { color:var(--success); font-weight:600; font-size:13px; }
+    /* 읽기전용 주소 필드 */
+    .form-control[readonly] {
+      background:#f3f4f6; cursor:default; color:var(--gray-700);
+    }
+    /* 필드 오류 표시 */
+    .form-control.field-error { border-color:var(--danger); background:#fff8f8; }
+    /* 제출 버튼 텍스트 가운데 정렬 */
+    #submitBtn { justify-content: center; }
+    .signup-stage { position:relative; transition:opacity .2s; }
+    .signup-stage + .signup-stage { margin-top:28px; }
+    .signup-stage.locked { opacity:.55; }
+    .signup-stage.locked::after {
+      content:attr(data-lock-message); position:absolute; inset:0; z-index:3;
+      display:flex; align-items:flex-start; justify-content:center; padding-top:54px;
+      border:1px dashed var(--gray-300); border-radius:8px;
+      color:var(--gray-600); background:rgba(249,250,251,.72); font-size:13px; font-weight:700;
+    }
+    .flow-title { display:flex; align-items:center; gap:9px; }
+    .flow-number {
+      display:inline-grid; place-items:center; width:25px; height:25px; border-radius:50%;
+      color:#fff; background:var(--primary); font-size:12px; font-weight:800;
+    }
+    .flow-guide { margin:-8px 0 16px; color:var(--gray-500); font-size:12px; }
+    .consent-all {
+      margin-bottom:14px; padding:13px 15px; border:1px solid #b8c8f5;
+      border-radius:8px; background:#f0f4ff; font-weight:700;
+    }
+  </style>
+</head>
+<body>
+<div class="reg-wrap">
+  <div class="reg-logo">
+    <h1>모노라마 광고 관리 시스템</h1>
+    <p>광고주 회원가입</p>
+  </div>
+
+  <div class="card">
+    <div class="card-body">
+      <form id="regForm" novalidate enctype="multipart/form-data">
+
+        <!-- ── 기업 정보 ─────────────────────────────────── -->
+        <div class="section-title">기업 정보</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">회사명 <span class="required">*</span></label>
+            <input class="form-control" name="company_name" placeholder="회사명" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">사업자등록번호 <span class="required">*</span></label>
+            <input class="form-control" name="business_no" id="businessNo"
+                   placeholder="0000000000 (숫자만 입력)" inputmode="numeric" required>
+            <div class="form-hint">숫자만 입력하세요. 자동으로 000-00-00000 형식으로 변환됩니다.</div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">대표자 이름 <span class="required">*</span></label>
+          <input class="form-control" name="ceo_name" placeholder="대표자 성명" required>
+        </div>
+
+        <!-- 주소 (카카오 주소 검색) -->
+        <div class="form-group">
+          <label class="form-label">주소1 <span class="required">*</span></label>
+          <div class="input-btn-row">
+            <input class="form-control" name="address1" id="address1"
+                   placeholder="주소 찾기 버튼을 클릭하세요" readonly required>
+            <button type="button" class="btn btn-outline" id="addrSearchBtn" style="white-space:nowrap">
+              🔍 주소 찾기
+            </button>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">주소2</label>
+            <input class="form-control" name="address2" id="address2"
+                   placeholder="상세 주소 (동/층/호)">
+          </div>
+          <div class="form-group">
+            <label class="form-label">우편번호 <span class="required">*</span></label>
+            <input class="form-control" name="postal_code" id="postalCode"
+                   placeholder="우편번호" readonly required>
+          </div>
+        </div>
+
+        <!-- ── 담당자 정보 ─────────────────────────────────── -->
+        <div class="section-title" style="margin-top:24px">담당자 정보</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">담당자명 <span class="required">*</span></label>
+            <input class="form-control" name="contact_name" id="contactName"
+                   placeholder="담당자 성명" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">모바일폰 <span class="required">*</span></label>
+            <input class="form-control" name="contact_mobile" id="contactMobile"
+                   placeholder="숫자만 입력 (010XXXXXXXX)" inputmode="numeric" required>
+            <div class="form-hint">숫자만 입력하세요. 자동으로 010-XXXX-XXXX 형식으로 변환됩니다.</div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">일반전화</label>
+          <input class="form-control" name="contact_phone" id="contactPhone"
+                 placeholder="숫자만 입력 (02XXXXXXXX)" inputmode="numeric">
+          <div class="form-hint">숫자만 입력하세요. 자동으로 0X-XXXX-XXXX 형식으로 변환됩니다.</div>
+        </div>
+
+        <!-- ── 이메일 인증 ─────────────────────────────────── -->
+        <div class="form-group">
+          <label class="form-label">담당자 이메일 <span class="required">*</span></label>
+          <div class="verify-row">
+            <input class="form-control" name="contact_email" id="contactEmail"
+                   type="text" placeholder="이메일 주소" required>
+            <button type="button" class="btn btn-outline" id="sendCodeBtn">인증코드 발송</button>
+          </div>
+        </div>
+        <div class="form-group" id="codeGroup" style="display:none">
+          <label class="form-label">인증코드 <span class="required">*</span></label>
+          <div class="verify-row">
+            <input class="form-control" id="verifyCode" placeholder="6자리 코드 입력" maxlength="6">
+            <button type="button" class="btn btn-success" id="verifyBtn">확인</button>
+          </div>
+          <div class="form-hint" id="codeTimer"></div>
+        </div>
+        <div id="emailVerified"
+             style="display:none;color:var(--success);font-size:13px;font-weight:600;margin-top:-10px;margin-bottom:16px">
+          ✅ 이메일 인증이 완료되었습니다.
+        </div>
+
+        <!-- ── 비밀번호 ───────────────────────────────────── -->
+        <div class="section-title" style="margin-top:24px">계정 보안</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">비밀번호 <span class="required">*</span></label>
+            <input class="form-control" type="password" id="password" name="password"
+                   placeholder="8자 이상, 대소문자+숫자+특수문자" required>
+            <div class="pw-strength" id="pwStrength"></div>
+            <div class="form-hint">대소문자, 숫자, 특수문자를 포함한 8자리 이상</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">비밀번호 확인 <span class="required">*</span></label>
+            <input class="form-control" type="password" id="password2" name="password2"
+                   placeholder="비밀번호 재입력" required>
+            <div class="form-hint" id="pw2Hint"></div>
+          </div>
+        </div>
+
+        <!-- ── 사업자등록증명원 ───────────────────────────── -->
+        <div class="section-title" style="margin-top:24px">사업자등록증명원</div>
+        <div class="form-group">
+          <label class="form-label">사업자등록증명원 파일 <span class="required">*</span></label>
+          <div class="file-drop" id="fileDrop"
+               onclick="document.getElementById('bizCertFile').click()">
+            <span class="icon">📄</span>
+            <div>클릭하거나 파일을 끌어다 놓으세요</div>
+            <div style="font-size:12px;color:var(--gray-400);margin-top:6px">PDF, JPG, PNG (최대 20MB)</div>
+          </div>
+          <input type="file" id="bizCertFile" name="biz_cert"
+                 accept=".pdf,.jpg,.jpeg,.png" style="display:none" required>
+          <div id="fileSelectedName" class="file-selected" style="margin-top:8px;display:none"></div>
+        </div>
+
+        <!-- ── 약관 동의 ──────────────────────────────────── -->
+        <div class="section-title" style="margin-top:24px">약관 동의</div>
+        <div class="consent-box" style="margin-bottom:16px">
+          <div class="form-check">
+            <input type="checkbox" id="terms" name="terms_consent" value="1" required>
+            <label for="terms" style="cursor:pointer;font-weight:600">[필수] 이용약관 동의</label>
+          </div>
+          <div class="consent-text">
+            제1조 (목적) 이 약관은 (주)모노라마(이하 "회사")가 운영하는 모노라마 광고 관리 시스템(이하 "서비스")의 이용 조건 및 절차, 회사와 이용자의 권리, 의무 및 책임사항을 규정함을 목적으로 합니다.
+            제2조 (정의) ① "서비스"란 회사가 제공하는 광고 캠페인 등록 및 관리 서비스를 말합니다.
+            제3조 (서비스 이용) 서비스는 관리자의 승인을 받은 광고주만 이용할 수 있습니다.
+            제4조 (광고료) 광고료는 회사가 정한 기준에 따라 산정되며, 부가세가 별도 부과됩니다.
+          </div>
+        </div>
+        <div class="consent-box" style="margin-bottom:16px">
+          <div class="form-check">
+            <input type="checkbox" id="privacy" name="privacy_consent" value="1" required>
+            <label for="privacy" style="cursor:pointer;font-weight:600">[필수] 개인정보 수집·이용 동의</label>
+          </div>
+          <div class="consent-text">
+            회사는 서비스 제공을 위해 다음과 같이 개인정보를 수집·이용합니다.
+            수집항목: 회사명, 사업자등록번호, 대표자명, 주소, 담당자명, 연락처, 이메일
+            수집목적: 광고주 인증, 서비스 제공, 견적서 발송
+            보유기간: 서비스 이용 종료 후 5년
+            위 개인정보 수집·이용에 동의하지 않을 경우 서비스 이용이 제한될 수 있습니다.
+          </div>
+        </div>
+        <div class="consent-box">
+          <div class="form-check">
+            <input type="checkbox" id="pushConsent" name="push_consent" value="1">
+            <label for="pushConsent" style="cursor:pointer">[선택] Push 알림 수신 동의</label>
+          </div>
+          <div style="margin-top:10px">
+            <div class="form-check">
+              <input type="checkbox" id="emailConsent" name="email_consent" value="1">
+              <label for="emailConsent" style="cursor:pointer">[선택] 이메일 수신 동의 (광고 및 마케팅 정보)</label>
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-lg"
+                style="width:100%;margin-top:28px;justify-content:center" id="submitBtn">
+          회원가입 신청
+        </button>
+        <div style="text-align:center;margin-top:16px;font-size:13px;color:var(--gray-500)">
+          이미 계정이 있으신가요? <a href="/admin" style="color:var(--primary);font-weight:600">로그인</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="/js/alert.js"></script>
+<script>
+  let emailVerified    = false;
+  let verifiedEmail    = '';
+  let codeTimerInterval = null;
+
+  /* ── 단계형 회원가입 화면 구성 ───────────────────────────── */
+  const regForm = document.getElementById('regForm');
+  const emailGroup = document.getElementById('contactEmail').closest('.form-group');
+  const codeGroup = document.getElementById('codeGroup');
+  const verifiedMessage = document.getElementById('emailVerified');
+  const consentTitle = [...regForm.querySelectorAll('.section-title')]
+    .find(el => el.textContent.trim() === '약관 동의');
+  const consentBoxes = [];
+  let consentCursor = consentTitle.nextElementSibling;
+  while (consentCursor && consentBoxes.length < 3) {
+    consentBoxes.push(consentCursor);
+    consentCursor = consentCursor.nextElementSibling;
+  }
+  const submitBtn = document.getElementById('submitBtn');
+  const loginFooter = submitBtn.nextElementSibling;
+  const excludedNodes = new Set([emailGroup, codeGroup, verifiedMessage, consentTitle, ...consentBoxes, submitBtn, loginFooter]);
+  const advertiserNodes = [...regForm.children].filter(node => !excludedNodes.has(node));
+
+  function createStage(number, title, lockMessage = '') {
+    const stage = document.createElement('section');
+    stage.className = 'signup-stage';
+    stage.dataset.lockMessage = lockMessage;
+    stage.innerHTML = `<div class="section-title flow-title"><span class="flow-number">${number}</span>${title}</div>`;
+    return stage;
+  }
+
+  const emailStage = createStage(1, '이메일 인증');
+  emailStage.insertAdjacentHTML('beforeend', '<p class="flow-guide">사용할 담당자 이메일을 먼저 인증해 주세요.</p>');
+  emailStage.append(emailGroup, codeGroup, verifiedMessage);
+
+  const consentStage = createStage(2, '약관 동의', '이메일 인증을 완료하면 동의할 수 있습니다.');
+  consentStage.classList.add('locked');
+  const consentAll = document.createElement('label');
+  consentAll.className = 'form-check consent-all';
+  consentAll.innerHTML = '<input type="checkbox" id="consentAll"><span>전체 동의</span>';
+  consentStage.append(consentAll, ...consentBoxes);
+
+  const advertiserStage = createStage(3, '광고주 정보', '필수 약관에 동의하면 광고주 정보를 입력할 수 있습니다.');
+  advertiserStage.classList.add('locked');
+  advertiserStage.append(...advertiserNodes);
+  regForm.prepend(emailStage, consentStage, advertiserStage);
+  regForm.append(submitBtn, loginFooter);
+
+  const consentInputs = [...consentStage.querySelectorAll('input[type="checkbox"]')];
+  const individualConsents = consentInputs.filter(input => input.id !== 'consentAll');
+  const requiredConsents = [document.getElementById('terms'), document.getElementById('privacy')];
+  const advertiserControls = [...advertiserStage.querySelectorAll('input, button, select, textarea')];
+
+  function setControlsDisabled(controls, disabled) {
+    controls.forEach(control => { control.disabled = disabled; });
+  }
+
+  function updateAdvertiserStage() {
+    const unlocked = emailVerified && requiredConsents.every(input => input.checked);
+    advertiserStage.classList.toggle('locked', !unlocked);
+    setControlsDisabled(advertiserControls, !unlocked);
+    submitBtn.disabled = !unlocked;
+  }
+
+  function unlockConsentStage() {
+    consentStage.classList.remove('locked');
+    setControlsDisabled(consentInputs, false);
+  }
+
+  setControlsDisabled(consentInputs, true);
+  setControlsDisabled(advertiserControls, true);
+  submitBtn.disabled = true;
+
+  document.getElementById('consentAll').addEventListener('change', function() {
+    individualConsents.forEach(input => { input.checked = this.checked; });
+    updateAdvertiserStage();
+  });
+  individualConsents.forEach(input => input.addEventListener('change', () => {
+    document.getElementById('consentAll').checked = individualConsents.every(item => item.checked);
+    updateAdvertiserStage();
+  }));
+
+  /* ── 포맷 유틸 ──────────────────────────────────────────── */
+
+  /** 숫자 외 문자 제거 */
+  function digitsOnly(val) { return val.replace(/\D/g, ''); }
+
+  /** 사업자등록번호 포맷: 10자리 → 000-00-00000 */
+  function formatBizNo(val) {
+    const d = digitsOnly(val).slice(0, 10);
+    if (d.length === 10) return d.replace(/(\d{3})(\d{2})(\d{5})/, '$1-$2-$3');
+    return d;
+  }
+
+  /** 모바일폰 포맷: 010-XXXX-XXXX 또는 010-XXX-XXXX */
+  function formatMobile(val) {
+    const d = digitsOnly(val).slice(0, 11);
+    if (d.length === 11) return d.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
+    if (d.length === 10) return d.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3');
+    return d;
+  }
+
+  /** 일반전화 포맷: 02계열 / 그 외 */
+  function formatPhone(val) {
+    const d = digitsOnly(val).slice(0, 11);
+    if (d.startsWith('02')) {
+      if (d.length === 9)  return d.replace(/(\d{2})(\d{3})(\d{4})/, '$1-$2-$3');
+      if (d.length === 10) return d.replace(/(\d{2})(\d{4})(\d{4})/, '$1-$2-$3');
+    } else {
+      if (d.length === 10) return d.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3');
+      if (d.length === 11) return d.replace(/(\d{3})(\d{4})(\d{4})/, '$1-$2-$3');
+    }
+    return d;
+  }
+
+  function isValidEmail(v) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
+  }
+
+  const PW_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
+
+  /* ── 사업자등록번호 ────────────────────────────────────── */
+  const bizNoEl = document.getElementById('businessNo');
+  bizNoEl.addEventListener('input',  () => { bizNoEl.value = digitsOnly(bizNoEl.value); });
+  bizNoEl.addEventListener('blur', () => {
+    const formatted = formatBizNo(bizNoEl.value);
+    bizNoEl.value = formatted;
+    const digits = digitsOnly(formatted);
+    if (digits.length > 0 && digits.length !== 10) {
+      bizNoEl.classList.add('field-error');
+      MxAlert.toast('사업자등록번호는 10자리 숫자여야 합니다.', 'error');
+    } else {
+      bizNoEl.classList.remove('field-error');
+    }
+  });
+
+  /* ── 카카오 주소 검색 ───────────────────────────────────── */
+  document.getElementById('addrSearchBtn').addEventListener('click', function() {
+    new daum.Postcode({
+      oncomplete: function(data) {
+        // 도로명 우선, 없으면 지번
+        const addr = data.roadAddress || data.jibunAddress;
+        document.getElementById('address1').value  = addr;
+        document.getElementById('postalCode').value = data.zonecode;
+        // 주소2 포커스 (유일하게 수정 가능)
+        document.getElementById('address2').focus();
+      },
+    }).open();
+  });
+
+  /* ── 모바일폰 ────────────────────────────────────────────── */
+  const mobileEl = document.getElementById('contactMobile');
+  mobileEl.addEventListener('input', () => { mobileEl.value = digitsOnly(mobileEl.value); });
+  mobileEl.addEventListener('blur', () => {
+    const formatted = formatMobile(mobileEl.value);
+    mobileEl.value = formatted;
+    const digits = digitsOnly(formatted);
+    if (digits.length > 0 && (digits.length < 10 || digits.length > 11)) {
+      mobileEl.classList.add('field-error');
+      MxAlert.toast('올바른 모바일폰 번호를 입력하세요. (예: 01012345678)', 'error');
+    } else {
+      mobileEl.classList.remove('field-error');
+    }
+  });
+
+  /* ── 일반전화 ────────────────────────────────────────────── */
+  const phoneEl = document.getElementById('contactPhone');
+  phoneEl.addEventListener('input', () => { phoneEl.value = digitsOnly(phoneEl.value); });
+  phoneEl.addEventListener('blur', () => {
+    if (!phoneEl.value) return;
+    const formatted = formatPhone(phoneEl.value);
+    phoneEl.value = formatted;
+    const digits = digitsOnly(formatted);
+    if (digits.length > 0 && (digits.length < 9 || digits.length > 11)) {
+      phoneEl.classList.add('field-error');
+      MxAlert.toast('올바른 전화번호를 입력하세요. (예: 0212345678)', 'error');
+    } else {
+      phoneEl.classList.remove('field-error');
+    }
+  });
+
+  /* ── 이메일 blur 검증 ────────────────────────────────────── */
+  const emailEl = document.getElementById('contactEmail');
+  emailEl.addEventListener('input', () => {
+    if (!emailVerified || emailEl.value.trim() === verifiedEmail) return;
+    emailVerified = false;
+    verifiedEmail = '';
+    document.getElementById('emailVerified').style.display = 'none';
+    individualConsents.forEach(input => { input.checked = false; input.disabled = true; });
+    document.getElementById('consentAll').checked = false;
+    document.getElementById('consentAll').disabled = true;
+    consentStage.classList.add('locked');
+    updateAdvertiserStage();
+  });
+  emailEl.addEventListener('blur', () => {
+    const v = emailEl.value.trim();
+    if (!v) return;
+    if (!isValidEmail(v)) {
+      emailEl.classList.add('field-error');
+      MxAlert.error('올바른 이메일 형식이 아닙니다.<br>예) example@company.com', { title: '이메일 형식 오류' });
+    } else {
+      emailEl.classList.remove('field-error');
+    }
+  });
+
+  /* ── 비밀번호 강도 표시 ──────────────────────────────────── */
+  const pwEl = document.getElementById('password');
+  pwEl.addEventListener('input', function() {
+    const v   = this.value;
+    const bar = document.getElementById('pwStrength');
+    let score = 0;
+    if (v.length >= 8)           score++;
+    if (/[A-Z]/.test(v))         score++;
+    if (/[a-z]/.test(v))         score++;
+    if (/[0-9]/.test(v))         score++;
+    if (/[^A-Za-z0-9]/.test(v))  score++;
+    const colors = ['#ef4444','#f97316','#eab308','#22c55e','#16a34a'];
+    bar.style.width      = (score * 20) + '%';
+    bar.style.background = colors[score - 1] || '#e5e7eb';
+    checkPw2();
+  });
+
+  /* ── 비밀번호 blur 검증 ──────────────────────────────────── */
+  pwEl.addEventListener('blur', function() {
+    const v = this.value;
+    if (!v) return;
+    if (!PW_REGEX.test(v)) {
+      pwEl.classList.add('field-error');
+      MxAlert.error(
+        '비밀번호가 요건을 충족하지 않습니다.<br><br>' +
+        '✔ 8자리 이상<br>' +
+        '✔ 대문자(A-Z) 포함<br>' +
+        '✔ 소문자(a-z) 포함<br>' +
+        '✔ 숫자(0-9) 포함<br>' +
+        '✔ 특수문자(!@#$ 등) 포함',
+        { title: '비밀번호 요건 미충족' }
+      );
+    } else {
+      pwEl.classList.remove('field-error');
+    }
+  });
+
+  /* ── 비밀번호 확인 일치 여부 ─────────────────────────────── */
+  document.getElementById('password2').addEventListener('input', checkPw2);
+  function checkPw2() {
+    const hint = document.getElementById('pw2Hint');
+    const p1   = document.getElementById('password').value;
+    const p2   = document.getElementById('password2').value;
+    if (!p2) { hint.textContent = ''; return; }
+    if (p1 === p2) { hint.textContent = '✅ 비밀번호가 일치합니다.'; hint.style.color = 'var(--success)'; }
+    else           { hint.textContent = '❌ 비밀번호가 일치하지 않습니다.'; hint.style.color = 'var(--danger)'; }
+  }
+
+  /* ── 파일 드래그앤드롭 ────────────────────────────────────── */
+  const fileDrop  = document.getElementById('fileDrop');
+  const fileInput = document.getElementById('bizCertFile');
+  fileDrop.addEventListener('dragover', e => { e.preventDefault(); fileDrop.classList.add('drag'); });
+  fileDrop.addEventListener('dragleave', ()  => fileDrop.classList.remove('drag'));
+  fileDrop.addEventListener('drop', e => {
+    e.preventDefault(); fileDrop.classList.remove('drag');
+    const files = e.dataTransfer.files;
+    if (files.length) { fileInput.files = files; updateFileName(files[0].name); }
+  });
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files.length) updateFileName(fileInput.files[0].name);
+  });
+  function updateFileName(name) {
+    const el = document.getElementById('fileSelectedName');
+    el.textContent   = '선택된 파일: ' + name;
+    el.style.display = 'block';
+  }
+
+  /* ── 인증코드 발송 ────────────────────────────────────────── */
+  document.getElementById('sendCodeBtn').addEventListener('click', async function() {
+    const email = emailEl.value.trim();
+    const name  = document.getElementById('contactName').value.trim();
+    if (!email) return MxAlert.error('이메일을 입력하세요.');
+    if (!isValidEmail(email)) {
+      emailEl.classList.add('field-error');
+      return MxAlert.error('올바른 이메일 형식을 입력하세요.');
+    }
+    emailEl.classList.remove('field-error');
+    this.disabled = true; this.textContent = '발송 중...';
+    try {
+      const res  = await fetch('/api/auth/send-verification', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, contact_name: name }),
+      });
+      const data = await res.json();
+      if (!res.ok) return MxAlert.error(data.error);
+      MxAlert.toast('인증코드가 발송되었습니다. 이메일을 확인하세요.', 'success');
+      document.getElementById('codeGroup').style.display = 'block';
+      startCodeTimer(600);
+    } catch { MxAlert.error('발송 실패. 다시 시도하세요.'); }
+    finally { this.disabled = false; this.textContent = '재발송'; }
+  });
+
+  function startCodeTimer(sec) {
+    clearInterval(codeTimerInterval);
+    const el = document.getElementById('codeTimer');
+    codeTimerInterval = setInterval(() => {
+      const m = Math.floor(sec / 60), s = sec % 60;
+      el.textContent = `유효시간: ${m}:${String(s).padStart(2, '0')}`;
+      if (--sec < 0) {
+        clearInterval(codeTimerInterval);
+        el.textContent = '코드가 만료되었습니다. 재발송해 주세요.';
+      }
+    }, 1000);
+  }
+
+  /* ── 인증코드 확인 ────────────────────────────────────────── */
+  document.getElementById('verifyBtn').addEventListener('click', async function() {
+    const email = emailEl.value.trim();
+    const code  = document.getElementById('verifyCode').value.trim();
+    if (!code || code.length !== 6) return MxAlert.error('6자리 코드를 입력하세요.');
+    this.disabled = true;
+    try {
+      const res  = await fetch('/api/auth/verify-code', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, code }),
+      });
+      const data = await res.json();
+      if (!res.ok) return MxAlert.error(data.error);
+      emailVerified = true;
+      verifiedEmail = email;
+      clearInterval(codeTimerInterval);
+      document.getElementById('codeGroup').style.display  = 'none';
+      document.getElementById('emailVerified').style.display = 'block';
+      unlockConsentStage();
+      updateAdvertiserStage();
+      MxAlert.toast('이메일 인증 완료!', 'success');
+    } catch { MxAlert.error('인증 실패.'); }
+    finally { this.disabled = false; }
+  });
+
+  /* ── 회원가입 제출 ────────────────────────────────────────── */
+  document.getElementById('regForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    if (!emailVerified)
+      return MxAlert.error('이메일 인증을 완료해주세요.');
+    if (!document.getElementById('bizCertFile').files.length)
+      return MxAlert.error('사업자등록증명원 파일을 첨부해주세요.');
+    if (!document.getElementById('terms').checked || !document.getElementById('privacy').checked)
+      return MxAlert.error('필수 약관에 동의해주세요.');
+    if (!document.getElementById('address1').value)
+      return MxAlert.error('주소 찾기 버튼을 이용해 주소를 입력하세요.');
+
+    const pw1 = document.getElementById('password').value;
+    const pw2 = document.getElementById('password2').value;
+    if (!PW_REGEX.test(pw1))
+      return MxAlert.error('비밀번호가 보안 요건을 충족하지 않습니다.');
+    if (pw1 !== pw2)
+      return MxAlert.error('비밀번호가 일치하지 않습니다.');
+
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true; btn.textContent = '처리 중...';
+
+    const fd = new FormData(this);
+    try {
+      const res  = await fetch('/api/auth/register', { method: 'POST', body: fd });
+      const data = await res.json();
+      if (!res.ok) return MxAlert.error(data.error);
+      await MxAlert.success(data.message || '회원가입 신청이 완료되었습니다.', { title: '신청 완료' });
+      window.location.href = '/admin';
+    } catch { MxAlert.error('서버 오류가 발생했습니다.'); }
+    finally { btn.disabled = false; btn.textContent = '회원가입 신청'; }
+  });
+</script>
+</body>
+</html>

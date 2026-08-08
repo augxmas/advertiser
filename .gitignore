@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+
+# Environment variables (contains secrets — never commit)
+.env
+.env.local
+.env.production
+# .env.example 은 커밋 대상 (민감정보 없는 템플릿)
+
+# Build output
+dist/
+
+# Uploaded files
+uploads/
+
+# Claude Code project settings
+.claude/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+*.log
+
+# Raw database backups may contain personal data and credentials
+database/backups/*-full-*.sql
+
+# Local operations and sensitive company assets
+close.bat
+public/images/*인감*

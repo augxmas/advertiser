@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>모노라마 광고 관리 시스템</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
+  <link rel="stylesheet" href="/css/common.css">
+  <style>
+    .login-footer { text-align:center; margin-top:20px; font-size:13px; color: var(--gray-500); }
+    .login-footer a { color: var(--primary); text-decoration:none; font-weight:600; }
+    .login-footer a:hover { text-decoration:underline; }
+    .login-info-box {
+      background: #f0f4ff;
+      border: 1px solid #c7d7fc;
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-bottom: 20px;
+      font-size: 13px;
+      color: #3b5999;
+    }
+    .divider { border: none; border-top: 1px solid var(--gray-200); margin: 20px 0; }
+    .password-wrap { position:relative; }
+    .password-wrap .toggle-pw {
+      position: absolute; right: 11px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; cursor: pointer; color: var(--gray-400); font-size: 16px;
+    }
+    .forgot-link {
+      display:block; text-align:right; font-size:12px; color:var(--gray-400);
+      margin-top:6px; cursor:pointer; text-decoration:underline;
+    }
+    .forgot-link:hover { color:var(--primary); }
+    .pw-strength { height:4px; border-radius:2px; margin-top:6px; transition:all .3s; background:#e5e7eb; }
+    /* 리셋폼 overlay (공통 css가 있을 경우 활용, 없으면 인라인) */
+    #resetOverlay {
+      display:none; position:fixed; inset:0; background:rgba(0,0,0,.45);
+      z-index:9999; align-items:center; justify-content:center;
+    }
+    #resetOverlay.visible { display:flex; }
+    #resetOverlay .box {
+      background:#fff; border-radius:12px; width:100%; max-width:460px;
+      box-shadow:0 8px 32px rgba(0,0,0,.18); overflow:hidden;
+    }
+    #resetOverlay .box-header {
+      background:var(--primary); color:#fff; padding:18px 24px;
+      font-size:16px; font-weight:700; text-align:center;
+    }
+    #resetOverlay .box-body { padding:24px; }
+    #resetOverlay .box-footer {
+      padding:16px 24px; border-top:1px solid var(--gray-200);
+      display:flex; justify-content:center;
+    }
+  </style>
+</head>
+<body>
+<div class="auth-page">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <h1>모노라마 광고 관리 시스템</h1>
+      <p id="authSubtitle">광고주 로그인</p>
+    </div>
+
+    <!-- ── 로그인 폼 ── -->
+    <form id="loginForm" novalidate>
+      <div class="form-group">
+        <label class="form-label" for="bizNo">사업자등록번호 <span class="required">*</span></label>
+        <input class="form-control" type="text" id="bizNo" placeholder="000-00-00000" inputmode="numeric" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="email">이메일 <span class="required">*</span></label>
+        <input class="form-control" type="email" id="email" placeholder="담당자 이메일" autocomplete="username" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="password">비밀번호 <span class="required">*</span></label>
+        <div class="password-wrap">
+          <input class="form-control" type="password" id="password" placeholder="비밀번호" autocomplete="current-password" required>
+          <button type="button" class="toggle-pw" id="togglePw">👁</button>
+        </div>
+        <span class="forgot-link" id="forgotLink">비밀번호를 잊으셨나요?</span>
+      </div>
+      <label class="form-check" style="margin:-6px 0 18px">
+        <input type="checkbox" id="rememberAdvertiserLogin">
+        <span>사업자등록번호·이메일 저장</span>
+      </label>
+      <button type="submit" class="btn btn-primary btn-lg" style="width:100%;margin-top:8px;justify-content:center" id="loginBtn">
+        로그인
+      </button>
+    </form>
+
+    <!-- ── 비밀번호 분실 섹션 ── -->
+    <div id="forgotSection" style="display:none">
+      <hr class="divider">
+      <div class="login-info-box">
+        사업자등록번호와 이메일을 입력하시면<br>임시비밀번호를 이메일로 발송해 드립니다.
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="fg_bizno">사업자등록번호 <span class="required">*</span></label>
+        <input class="form-control" type="text" id="fg_bizno" placeholder="000-00-00000" inputmode="numeric">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="fg_email">이메일 <span class="required">*</span></label>
+        <input class="form-control" type="email" id="fg_email" placeholder="담당자 이메일">
+      </div>
+      <button type="button" class="btn btn-outline btn-lg" style="width:100%;justify-content:center" id="forgotBtn">
+        임시비밀번호 발송
+      </button>
+      <button type="button" class="btn btn-ghost btn-sm" style="width:100%;margin-top:8px;justify-content:center" id="forgotCancelBtn">
+        로그인으로 돌아가기
+      </button>
+    </div>
+
+    <div class="login-footer" id="loginFooter">
+      <p>광고주 계정이 없으신가요? <a href="/register">회원가입</a></p>
+    </div>
+  </div>
+</div>
+
+<!-- 비밀번호 재설정 오버레이 (임시비밀번호 로그인 후) -->
+<div id="resetOverlay">
+  <div class="box">
+    <div class="box-header">🔐 비밀번호 재설정 필요</div>
+    <div class="box-body">
+      <div class="login-info-box">
+        임시비밀번호로 로그인하셨습니다.<br>
+        보안을 위해 새 비밀번호로 변경해 주세요.
+      </div>
+      <div class="form-group">
+        <label class="form-label">현재 비밀번호 (임시비밀번호) <span class="required">*</span></label>
+        <input class="form-control" type="password" id="rp_current" placeholder="이메일로 발송된 임시비밀번호">
+      </div>
+      <div class="form-group">
+        <label class="form-label">새 비밀번호 <span class="required">*</span></label>
+        <input class="form-control" type="password" id="rp_new" placeholder="8자 이상, 대소문자+숫자+특수문자">
+        <div class="pw-strength" id="rpPwStrength"></div>
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">새 비밀번호 확인 <span class="required">*</span></label>
+        <input class="form-control" type="password" id="rp_new2" placeholder="비밀번호 재입력">
+        <div class="form-hint" id="rpPw2Hint" style="margin-top:4px"></div>
+      </div>
+    </div>
+    <div class="box-footer">
+      <button class="btn btn-primary" style="min-width:160px;justify-content:center" id="resetPwBtn">비밀번호 변경</button>
+    </div>
+  </div>
+</div>
+
+<script src="/js/alert.js"></script>
+<script>
+  // 이미 로그인되어 있으면 대시보드로
+  fetch('/api/auth/me').then(r => r.json()).then(d => {
+    if (d.ok) window.location.href = '/dashboard';
+  }).catch(() => {});
+
+  /* ── 사업자등록번호 포맷 ── */
+  const bizNoEl = document.getElementById('bizNo');
+  const ADVERTISER_LOGIN_STORAGE_KEY = 'advertiser-remembered-login';
+  try {
+    const savedLogin = JSON.parse(localStorage.getItem(ADVERTISER_LOGIN_STORAGE_KEY) || 'null');
+    if (savedLogin?.business_no && savedLogin?.email) {
+      const digits = String(savedLogin.business_no).replace(/\D/g, '').slice(0, 10);
+      bizNoEl.value = digits.length === 10
+        ? digits.replace(/(\d{3})(\d{2})(\d{5})/, '$1-$2-$3')
+        : digits;
+      document.getElementById('email').value = String(savedLogin.email);
+      document.getElementById('rememberAdvertiserLogin').checked = true;
+      document.getElementById('password').focus();
+    }
+  } catch {}
+  bizNoEl.addEventListener('input', () => {
+    bizNoEl.value = bizNoEl.value.replace(/\D/g, '').slice(0, 10);
+  });
+  bizNoEl.addEventListener('blur', () => {
+    const d = bizNoEl.value.replace(/\D/g, '');
+    if (d.length === 10) bizNoEl.value = d.replace(/(\d{3})(\d{2})(\d{5})/, '$1-$2-$3');
+  });
+
+  /* ── 비밀번호 표시 전환 ── */
+  document.getElementById('togglePw').addEventListener('click', function() {
+    const pw = document.getElementById('password');
+    pw.type = pw.type === 'password' ? 'text' : 'password';
+    this.textContent = pw.type === 'password' ? '👁' : '🙈';
+  });
+
+  /* ── 로그인 폼 제출 ── */
+  document.getElementById('loginForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const business_no = document.getElementById('bizNo').value.trim();
+    const email       = document.getElementById('email').value.trim();
+    const password    = document.getElementById('password').value;
+    const rememberLogin = document.getElementById('rememberAdvertiserLogin').checked;
+    const btn         = document.getElementById('loginBtn');
+
+    if (!business_no || !email || !password) {
+      return MxAlert.error('사업자등록번호, 이메일, 비밀번호를 모두 입력하세요.');
+    }
+
+    btn.disabled    = true;
+    btn.textContent = '로그인 중...';
+
+    try {
+      const res  = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ business_no, email, password }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        MxAlert.error(data.error || '로그인에 실패했습니다.');
+        return;
+      }
+
+      try {
+        if (rememberLogin) {
+          localStorage.setItem(ADVERTISER_LOGIN_STORAGE_KEY, JSON.stringify({
+            business_no: business_no.replace(/\D/g, ''),
+            email,
+          }));
+        } else {
+          localStorage.removeItem(ADVERTISER_LOGIN_STORAGE_KEY);
+        }
+      } catch {}
+
+      if (data.resetRequired) {
+        // 임시비밀번호 → 비밀번호 재설정 오버레이 표시
+        document.getElementById('resetOverlay').classList.add('visible');
+        return;
+      }
+
+      let welcomeMsg = `환영합니다, ${data.contact_name}님!<br><br>많은 이용을 바랍니다.`;
+      if (data.prevIp && data.prevAt) {
+        const dt = new Date(data.prevAt).toLocaleString('ko-KR');
+        welcomeMsg += `<br><br><small style="color:#6b7280">마지막 접속: ${data.prevIp} (${dt})</small>`;
+      }
+
+      await MxAlert.success(welcomeMsg, {
+        title: '로그인 성공',
+        confirmText: '시작하기'
+      });
+      window.location.href = '/dashboard';
+    } catch (err) {
+      MxAlert.error('서버 연결에 실패했습니다.');
+    } finally {
+      btn.disabled    = false;
+      btn.textContent = '로그인';
+    }
+  });
+
+  /* ── 비밀번호 분실 토글 ── */
+  document.getElementById('forgotLink').addEventListener('click', () => {
+    document.getElementById('loginForm').style.display      = 'none';
+    document.getElementById('forgotSection').style.display  = 'block';
+    document.getElementById('loginFooter').style.display    = 'none';
+    document.getElementById('authSubtitle').textContent     = '임시비밀번호 발급';
+    // 로그인 폼의 bizNo 값이 있으면 자동 복사
+    const biz = document.getElementById('bizNo').value;
+    if (biz) document.getElementById('fg_bizno').value = biz;
+    const em = document.getElementById('email').value;
+    if (em) document.getElementById('fg_email').value = em;
+  });
+
+  document.getElementById('forgotCancelBtn').addEventListener('click', () => {
+    document.getElementById('loginForm').style.display      = 'block';
+    document.getElementById('forgotSection').style.display  = 'none';
+    document.getElementById('loginFooter').style.display    = 'block';
+    document.getElementById('authSubtitle').textContent     = '광고주 로그인';
+  });
+
+  /* ── 사업자등록번호 포맷 (분실 폼) ── */
+  const fgBizEl = document.getElementById('fg_bizno');
+  fgBizEl.addEventListener('input', () => {
+    fgBizEl.value = fgBizEl.value.replace(/\D/g, '').slice(0, 10);
+  });
+  fgBizEl.addEventListener('blur', () => {
+    const d = fgBizEl.value.replace(/\D/g, '');
+    if (d.length === 10) fgBizEl.value = d.replace(/(\d{3})(\d{2})(\d{5})/, '$1-$2-$3');
+  });
+
+  /* ── 임시비밀번호 발송 ── */
+  document.getElementById('forgotBtn').addEventListener('click', async function() {
+    const business_no = document.getElementById('fg_bizno').value.trim();
+    const email       = document.getElementById('fg_email').value.trim();
+    if (!business_no || !email) return MxAlert.error('사업자등록번호와 이메일을 입력하세요.');
+
+    this.disabled    = true;
+    this.textContent = '발송 중...';
+    try {
+      const res  = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ business_no, email }),
+      });
+      const data = await res.json();
+      if (!res.ok) return MxAlert.error(data.error || '처리에 실패했습니다.');
+      await MxAlert.success(data.message || '임시비밀번호가 발송되었습니다.', { title: '발송 완료', confirmText: '로그인하기' });
+      // 로그인 폼으로 돌아가며 이메일 자동 입력
+      document.getElementById('loginForm').style.display     = 'block';
+      document.getElementById('forgotSection').style.display = 'none';
+      document.getElementById('loginFooter').style.display   = 'block';
+      document.getElementById('authSubtitle').textContent    = '광고주 로그인';
+      document.getElementById('email').value = email;
+      document.getElementById('bizNo').value = business_no;
+      document.getElementById('password').focus();
+    } catch { MxAlert.error('서버 연결에 실패했습니다.'); }
+    finally { this.disabled = false; this.textContent = '임시비밀번호 발송'; }
+  });
+
+  /* ── 비밀번호 재설정 오버레이 ── */
+  const PW_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
+
+  document.getElementById('rp_new').addEventListener('input', function() {
+    const bar = document.getElementById('rpPwStrength');
+    const v = this.value;
+    let score = 0;
+    if (v.length >= 8)           score++;
+    if (/[A-Z]/.test(v))         score++;
+    if (/[a-z]/.test(v))         score++;
+    if (/[0-9]/.test(v))         score++;
+    if (/[^A-Za-z0-9]/.test(v))  score++;
+    const colors = ['#ef4444','#f97316','#eab308','#22c55e','#16a34a'];
+    bar.style.width      = (score * 20) + '%';
+    bar.style.background = colors[score - 1] || '#e5e7eb';
+    checkRpPw2();
+  });
+
+  document.getElementById('rp_new2').addEventListener('input', checkRpPw2);
+  function checkRpPw2() {
+    const hint = document.getElementById('rpPw2Hint');
+    const p1   = document.getElementById('rp_new').value;
+    const p2   = document.getElementById('rp_new2').value;
+    if (!p2) { hint.textContent = ''; return; }
+    if (p1 === p2) { hint.textContent = '✅ 비밀번호가 일치합니다.'; hint.style.color = 'var(--success)'; }
+    else           { hint.textContent = '❌ 비밀번호가 일치하지 않습니다.'; hint.style.color = 'var(--danger)'; }
+  }
+
+  document.getElementById('resetPwBtn').addEventListener('click', async function() {
+    const current_password = document.getElementById('rp_current').value;
+    const new_password     = document.getElementById('rp_new').value;
+    const new_password2    = document.getElementById('rp_new2').value;
+
+    if (!current_password) return MxAlert.error('현재 비밀번호(임시비밀번호)를 입력하세요.');
+    if (!PW_REGEX.test(new_password))
+      return MxAlert.error('새 비밀번호가 보안 요건을 충족하지 않습니다.<br>대소문자, 숫자, 특수문자를 포함한 8자리 이상이어야 합니다.');
+    if (new_password !== new_password2)
+      return MxAlert.error('새 비밀번호가 일치하지 않습니다.');
+
+    this.disabled    = true;
+    this.textContent = '변경 중...';
+    try {
+      const res  = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ current_password, new_password }),
+      });
+      const data = await res.json();
+      if (!res.ok) return MxAlert.error(data.error || '변경에 실패했습니다.');
+      await MxAlert.success('비밀번호가 변경되었습니다. 대시보드로 이동합니다.', { title: '변경 완료' });
+      window.location.href = '/dashboard';
+    } catch { MxAlert.error('서버 연결에 실패했습니다.'); }
+    finally { this.disabled = false; this.textContent = '비밀번호 변경'; }
+  });
+</script>
+</body>
+</html>

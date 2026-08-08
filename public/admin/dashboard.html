@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>관리자 대시보드 - 모노라마 광고 관리 시스템</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
+  <link rel="stylesheet" href="/css/common.css">
+  <style>
+    /* Viewport 좌·우 여백: 각 2.5%, 합계 5% */
+    .container { width:95%; max-width:none; padding:28px 0; }
+    .header { background: #1e3a5f; border-bottom:1px solid #2d4d7a; }
+    .header-logo { color:#60a5fa; }
+    .header-info { color:#94a3b8; }
+    .tab-nav { display:flex; gap:0; border-bottom:2px solid var(--gray-200); margin-bottom:24px; }
+    .tab-btn {
+      padding:12px 28px; border:none; background:none; cursor:pointer;
+      font-size:14px; font-weight:600; color:var(--gray-500);
+      border-bottom:3px solid transparent; margin-bottom:-2px;
+      transition:all .15s; border-radius:6px 6px 0 0;
+    }
+    .tab-btn:hover:not(.active) {
+      color:var(--gray-800, #1f2937);
+      background:#f3f4f6;
+    }
+    .tab-btn.active {
+      color:var(--primary);
+      border-bottom-color:var(--primary);
+      background:#eff6ff;
+    }
+    .tab-content { display:none; }
+    .tab-content.active { display:block; }
+    .biz-cert-actions { display:flex; gap:6px; }
+    .text-sm { font-size:12px; }
+    .approve-form { display:flex; flex-direction:column; gap:10px; }
+    .reason-box {
+      display:none; background:#fef2f2; border:1px solid #fca5a5;
+      border-radius:6px; padding:12px;
+    }
+    .reason-box.visible { display:block; }
+    .ip-info { font-size:11px; color:var(--gray-400); }
+    /* ── 현황 탭 ─────────────────────────────────────────── */
+    .stat-row { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:20px; }
+    .stat-box {
+      flex:1; min-width:120px; background:#fff; border-radius:8px;
+      border:1px solid var(--gray-200); padding:18px 16px; text-align:center;
+      box-shadow:0 1px 4px rgba(0,0,0,.05);
+    }
+    .stat-box .s-num { font-size:28px; font-weight:800; margin-bottom:4px; }
+    .stat-box .s-lbl { font-size:12px; color:var(--gray-500); }
+    .stat-box.total  .s-num { color:var(--primary); }
+    .stat-box.s-입금전  .s-num { color:#92400e; }
+    .stat-box.s-입금확인 .s-num { color:#1e40af; }
+    .stat-box.s-광고중  .s-num { color:#166534; }
+    .stat-box.s-광고종료 .s-num { color:#6b7280; }
+    .stat-box.s-취소    .s-num { color:#991b1b; }
+    .fee-bar-wrap { background:var(--gray-100); border-radius:8px; height:24px; overflow:hidden; margin:10px 0; }
+    .fee-bar { height:100%; border-radius:8px; transition:width .6s; }
+    .rank-table { width:100%; border-collapse:collapse; font-size:13.5px; }
+    .rank-table th { background:var(--gray-50); border:1px solid var(--gray-200); padding:9px 12px; font-weight:600; color:var(--gray-700); text-align:left; }
+    .rank-table td { border:1px solid var(--gray-200); padding:9px 12px; color:var(--gray-700); }
+    .rank-table tr:hover td { background:#eff6ff; }
+    .rank-num { display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50%; font-size:12px; font-weight:700; background:var(--gray-200); color:var(--gray-700); }
+    .rank-num.gold   { background:#fbbf24; color:#fff; }
+    .rank-num.silver { background:#9ca3af; color:#fff; }
+    .rank-num.bronze { background:#b45309; color:#fff; }
+    .stat-box.clickable { cursor:pointer; transition:all .15s; }
+    .stat-box.clickable:hover { transform:translateY(-2px); box-shadow:0 4px 12px rgba(0,0,0,.12); border-color:var(--primary); }
+    .rank-table tr.clickable-row { cursor:pointer; }
+    .rank-table tr.clickable-row:hover td { background:#dbeafe; }
+
+    /* 광고주 상세 모달: 고정 헤더/푸터 + 본문 스크롤 */
+    #advDetailOverlay .overlay-dialog {
+      display:flex; flex-direction:column; overflow:hidden;
+      width:100%; max-height:90vh;
+    }
+    #advDetailOverlay .overlay-header {
+      flex:0 0 auto; background:var(--primary); color:#fff;
+      border-bottom-color:var(--primary-d);
+    }
+    #advDetailOverlay .overlay-title { color:#fff; }
+    #advDetailOverlay .overlay-close { color:#fff; }
+    #advDetailOverlay .overlay-body {
+      flex:1 1 auto; min-height:0; overflow-y:auto;
+    }
+    #advDetailOverlay .overlay-footer {
+      flex:0 0 auto; justify-content:center; background:#fff;
+    }
+    /* 캠페인 상세 모달: 고정 헤더/푸터 + 본문 스크롤 */
+    #campaignDetailOverlay .overlay-dialog {
+      display:flex; flex-direction:column; overflow:hidden;
+      width:100%; max-height:90vh;
+    }
+    #campaignDetailOverlay .overlay-header {
+      flex:0 0 auto; justify-content:center;
+      background:var(--primary); color:#fff;
+      border-bottom-color:var(--primary-d);
+    }
+    #campaignDetailOverlay .overlay-title,
+    #campaignDetailOverlay .overlay-close { color:#fff; }
+    #campaignDetailOverlay .overlay-body {
+      flex:1 1 auto; min-height:0; overflow-y:auto;
+    }
+    #campaignDetailOverlay .overlay-footer {
+      flex:0 0 auto; justify-content:center; background:#fff;
+    }
+    #bizCertPreviewOverlay .overlay-dialog {
+      display:flex; flex-direction:column; overflow:hidden;
+      width:95%; max-width:900px; height:min(820px,90vh);
+    }
+    #bizCertPreviewOverlay .overlay-header {
+      flex:0 0 auto; justify-content:center; background:var(--primary); color:#fff;
+    }
+    #bizCertPreviewOverlay .overlay-title, #bizCertPreviewOverlay .overlay-close { color:#fff; }
+    #bizCertPreviewOverlay .overlay-body { flex:1 1 auto; min-height:0; padding:16px; overflow:auto; background:var(--gray-100); }
+    #bizCertPreviewOverlay .overlay-footer { flex:0 0 auto; justify-content:center; background:#fff; }
+    /* 미디어 미리보기 모달: 고정 헤더/URL/푸터 + 본문 스크롤 */
+    #mediaPreviewOverlay .overlay-dialog {
+      display:flex; flex-direction:column; overflow:hidden;
+      height:min(820px,90vh);
+    }
+    #mediaPreviewOverlay .overlay-header {
+      flex:0 0 auto; background:var(--primary); color:#fff;
+      border-bottom-color:var(--primary-d);
+    }
+    #mediaPreviewOverlay .overlay-title,
+    #mediaPreviewOverlay .overlay-close { color:#fff; }
+    #mediaPreviewOverlay .overlay-body {
+      flex:1 1 auto; min-height:0; overflow-y:auto; background:var(--gray-100);
+    }
+    #mediaPreviewOverlay .media-url-panel,
+    #mediaPreviewOverlay .overlay-footer { flex:0 0 auto; }
+    #mediaPreviewOverlay .overlay-footer { justify-content:center; background:#fff; }
+    #mediaPreviewOverlay.media-type-image .overlay-body img { max-height:none !important; }
+    .supervisor-notification-wrap { position:relative; }
+    .supervisor-notification-btn { position:relative; border-color:#4b5563 !important; color:#e2e8f0 !important; font-size:18px !important; padding:4px 10px !important; }
+    .supervisor-notification-badge { position:absolute; top:-5px; right:-5px; min-width:18px; height:18px; padding:0 5px; display:none; align-items:center; justify-content:center; border-radius:999px; background:#dc2626; color:#fff; font-size:10px; font-weight:800; }
+    .supervisor-notification-panel { position:absolute; top:calc(100% + 10px); right:0; z-index:9800; width:min(400px,90vw); max-height:520px; display:none; flex-direction:column; overflow:hidden; background:#fff; border:1px solid var(--gray-200); border-radius:10px; box-shadow:0 14px 40px rgba(15,23,42,.28); color:var(--gray-800); }
+    .supervisor-notification-panel.open { display:flex; }
+    .supervisor-notification-head { display:flex; align-items:center; justify-content:space-between; padding:13px 15px; background:var(--primary); color:#fff; }
+    .supervisor-notification-head button { border:0; background:transparent; color:#fff; cursor:pointer; font-size:12px; }
+    .supervisor-notification-list { overflow-y:auto; max-height:450px; }
+    .supervisor-notification-item { padding:13px 15px; border-bottom:1px solid var(--gray-100); cursor:pointer; }
+    .supervisor-notification-item.unread { background:#eff6ff; }
+    .supervisor-notification-title { font-size:13px; font-weight:700; }
+    .supervisor-notification-message { margin-top:4px; font-size:12px; color:var(--gray-600); line-height:1.45; }
+    .supervisor-notification-date { margin-top:5px; font-size:10px; color:var(--gray-400); }
+    .supervisor-notification-empty { padding:38px 15px; text-align:center; color:var(--gray-400); font-size:12px; }
+
+    /* 현황 탭 컴팩트 레이아웃 */
+    #tab-stats .stats-card { margin-bottom:14px; }
+    #tab-stats .card-header { padding:11px 18px; min-height:44px; }
+    #tab-stats .card-title { font-size:14px; }
+    #tab-stats .card-body { padding:13px 18px; }
+    #tab-stats .stat-row { gap:10px; margin-bottom:0; flex-wrap:nowrap; }
+    #tab-stats .stat-box { min-width:0; padding:10px 12px; }
+    #tab-stats .stat-box .s-num { font-size:25px; line-height:1.2; margin-bottom:2px; }
+    #tab-stats .stat-box .s-lbl { font-size:12px; line-height:1.3; }
+    #tab-stats .stats-fee-summary { gap:12px; margin-bottom:10px; }
+    #tab-stats .stats-fee-summary > div { padding:11px 14px; }
+    #tab-stats .stats-fee-summary > div > div:first-child { margin-bottom:4px !important; line-height:1.3; }
+    #tab-stats #fee-total, #tab-stats #fee-paid { font-size:24px !important; line-height:1.25; }
+    #tab-stats #fee-paid-pct, #tab-stats .stats-fee-summary > div > div:last-child { margin-top:2px !important; font-size:12px !important; }
+    #tab-stats .fee-bar-wrap { height:16px; margin:6px 0; }
+    #tab-stats .stats-unpaid { margin-top:7px; gap:22px; font-size:12px !important; line-height:1.4; }
+    #tab-stats .stats-rank-grid { gap:14px; }
+    #tab-stats .rank-table { font-size:12.5px; }
+    #tab-stats .rank-table th, #tab-stats .rank-table td { padding:7px 10px; line-height:1.35; }
+    #tab-stats .rank-num { width:20px; height:20px; font-size:11px; }
+    @media (max-width:900px) {
+      #tab-stats .stat-row { flex-wrap:wrap; }
+      #tab-stats .stat-box { min-width:30%; }
+      #tab-stats .stats-rank-grid { grid-template-columns:1fr !important; }
+    }
+  </style>
+</head>
+<body>
+<!-- Header -->
+<header class="header">
+  <a class="header-logo" href="/supervisor/dashboard">모노라마 광고 관리 시스템</a>
+  <div class="header-info">
+    <span class="username" id="hdrName" style="color:#e2e8f0"></span>
+    <span class="last-login" id="hdrLastLogin"></span>
+    <div class="supervisor-notification-wrap" id="supervisorNotificationWrap">
+      <button type="button" class="btn btn-ghost btn-sm supervisor-notification-btn" id="supervisorNotificationBtn" title="알림">🔔<span class="supervisor-notification-badge" id="supervisorNotificationBadge">0</span></button>
+      <div class="supervisor-notification-panel" id="supervisorNotificationPanel">
+        <div class="supervisor-notification-head"><strong>Supervisor 알림</strong><button type="button" id="supervisorNotificationReadAll">모두 읽음</button></div>
+        <div class="supervisor-notification-list" id="supervisorNotificationList"><div class="supervisor-notification-empty">알림을 불러오는 중입니다.</div></div>
+      </div>
+    </div>
+    <button class="btn btn-ghost btn-sm" id="logoutBtn" style="border-color:#4b5563;color:#e2e8f0">로그아웃</button>
+  </div>
+</header>
+
+<div class="container">
+  <!-- Tabs -->
+  <div class="tab-nav">
+    <button class="tab-btn active" data-tab="campaigns">캠페인 관리</button>
+    <button class="tab-btn" data-tab="advertisers">광고주 관리</button>
+    <button class="tab-btn" data-tab="stats">현황</button>
+  </div>
+
+  <!-- ── 캠페인 관리 탭 ─────────────────────────────────────── -->
+  <div class="tab-content active" id="tab-campaigns">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">캠페인 목록 (전체)</span>
+      </div>
+      <div class="toolbar">
+        <div class="toolbar-group">
+          <div>
+            <label>광고주</label>
+            <input type="text" id="sAdvertiser" placeholder="회사명">
+          </div>
+          <div>
+            <label>캠페인명</label>
+            <input type="text" id="sCampaignName" placeholder="캠페인명">
+          </div>
+          <div>
+            <label>상태</label>
+            <select id="sCampaignStatus">
+              <option value="">전체</option>
+              <option value="입금전">입금전</option>
+              <option value="입금확인">입금확인</option>
+              <option value="광고중">광고중</option>
+              <option value="광고종료">광고종료</option>
+              <option value="취소">취소</option>
+            </select>
+          </div>
+          <div>
+            <label>등록일(시작)</label>
+            <input type="date" id="sRegFrom">
+          </div>
+          <div>
+            <label>등록일(종료)</label>
+            <input type="date" id="sRegTo">
+          </div>
+          <div>
+            <label>광고 시작일</label>
+            <input type="date" id="sFromDate">
+          </div>
+          <div>
+            <label>광고 종료일</label>
+            <input type="date" id="sToDate">
+          </div>
+        </div>
+        <div class="toolbar-group">
+          <button class="btn btn-primary btn-sm" id="searchCampaignBtn">🔍 조회</button>
+          <button class="btn btn-ghost btn-sm" id="resetCampaignBtn">초기화</button>
+          <button class="btn btn-outline btn-sm" id="excelCampaignBtn" disabled>📊 엑셀 다운로드</button>
+        </div>
+        <div class="toolbar-group column-adjust-slot" id="campaignColumnAdjustSlot"></div>
+      </div>
+      <div id="campaignGridContainer"></div>
+    </div>
+  </div>
+
+  <!-- ── 현황 탭 ──────────────────────────────────────────────── -->
+  <div class="tab-content" id="tab-stats">
+    <!-- 1. 상태별 캠페인 개수 -->
+    <div class="card stats-card">
+      <div class="card-header"><span class="card-title">캠페인 상태 현황</span></div>
+      <div class="card-body">
+        <div class="stat-row" id="statStatusRow">
+          <div class="stat-box total clickable" data-status="" title="전체 캠페인 조회">
+            <div class="s-num" id="st-total">-</div><div class="s-lbl">전체</div>
+          </div>
+          <div class="stat-box s-입금전 clickable" data-status="입금전" title="입금전 캠페인 조회">
+            <div class="s-num" id="st-입금전">-</div><div class="s-lbl">입금전</div>
+          </div>
+          <div class="stat-box s-입금확인 clickable" data-status="입금확인" title="입금확인 캠페인 조회">
+            <div class="s-num" id="st-입금확인">-</div><div class="s-lbl">입금확인</div>
+          </div>
+          <div class="stat-box s-광고중 clickable" data-status="광고중" title="광고중 캠페인 조회">
+            <div class="s-num" id="st-광고중">-</div><div class="s-lbl">광고중</div>
+          </div>
+          <div class="stat-box s-광고종료 clickable" data-status="광고종료" title="광고종료 캠페인 조회">
+            <div class="s-num" id="st-광고종료">-</div><div class="s-lbl">광고종료</div>
+          </div>
+          <div class="stat-box s-취소 clickable" data-status="취소" title="취소 캠페인 조회">
+            <div class="s-num" id="st-취소">-</div><div class="s-lbl">취소</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. 광고비 비교 -->
+    <div class="card stats-card stats-fee-card">
+      <div class="card-header"><span class="card-title">광고비 현황</span></div>
+      <div class="card-body">
+        <div class="stats-fee-summary" style="display:grid;grid-template-columns:1fr 1fr">
+          <div style="background:#eff6ff;border-radius:8px;text-align:center">
+            <div style="font-size:12px;font-weight:600;color:var(--gray-500);margin-bottom:8px">전체 광고비 (취소 제외)</div>
+            <div style="font-size:26px;font-weight:800;color:var(--primary)" id="fee-total">-</div>
+            <div style="font-size:13px;color:var(--gray-400);margin-top:4px">100%</div>
+          </div>
+          <div style="background:#f0fdf4;border-radius:8px;text-align:center">
+            <div style="font-size:12px;font-weight:600;color:var(--gray-500);margin-bottom:8px">실제 입금액 (입금확인·광고중·광고종료)</div>
+            <div style="font-size:26px;font-weight:800;color:var(--success)" id="fee-paid">-</div>
+            <div style="font-size:13px;color:var(--success);margin-top:4px" id="fee-paid-pct">-</div>
+          </div>
+        </div>
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--gray-500);margin-bottom:4px">
+            <span>입금 완료율</span><span id="fee-pct" style="font-weight:700;color:var(--success)">-</span>
+          </div>
+          <div class="fee-bar-wrap">
+            <div class="fee-bar" id="fee-bar" style="width:0%;background:var(--success)"></div>
+          </div>
+        </div>
+        <div class="stats-unpaid" style="display:flex;font-size:13px;color:var(--gray-500)">
+          <span>미수금: <strong id="fee-unpaid" style="color:var(--warning)">-</strong></span>
+          <span>미수금 비율: <strong id="fee-unpaid-pct" style="color:var(--warning)">-</strong></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. 광고주 랭킹 -->
+    <div class="stats-rank-grid" style="display:grid;grid-template-columns:1fr 1fr">
+      <div class="card">
+        <div class="card-header"><span class="card-title">💰 광고 매출 상위 5</span></div>
+        <div class="card-body" style="padding:0">
+          <table class="rank-table">
+            <thead><tr><th style="width:40px">순위</th><th>광고주</th><th style="text-align:right">입금 매출</th><th style="text-align:right">유효 캠페인</th></tr></thead>
+            <tbody id="rankRevBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">📋 캠페인 등록 상위 5</span><span style="font-size:11px;color:var(--gray-400);font-weight:400;margin-left:6px">(취소 제외)</span></div>
+        <div class="card-body" style="padding:0">
+          <table class="rank-table">
+            <thead><tr><th style="width:40px">순위</th><th>광고주</th><th style="text-align:right">등록 캠페인</th><th style="text-align:right">입금 매출</th></tr></thead>
+            <tbody id="rankCntBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 광고주 관리 탭 ─────────────────────────────────────── -->
+  <div class="tab-content" id="tab-advertisers">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">광고주 목록</span>
+      </div>
+      <div class="toolbar">
+        <div class="toolbar-group">
+          <div>
+            <label>회사명</label>
+            <input type="text" id="sAdvCompany" placeholder="회사명">
+          </div>
+          <div>
+            <label>상태</label>
+            <select id="sAdvStatus">
+              <option value="">전체</option>
+              <option value="pending">심사중</option>
+              <option value="approved">승인</option>
+              <option value="rejected">취소</option>
+              <option value="terminated">종료</option>
+            </select>
+          </div>
+        </div>
+        <div class="toolbar-group">
+          <button class="btn btn-primary btn-sm" id="searchAdvBtn">🔍 조회</button>
+          <button class="btn btn-ghost btn-sm" id="resetAdvBtn">초기화</button>
+          <button class="btn btn-outline btn-sm" id="excelAdvBtn" disabled>📊 엑셀 다운로드</button>
+        </div>
+        <div class="toolbar-group column-adjust-slot" id="advColumnAdjustSlot"></div>
+      </div>
+      <div id="advGridContainer"></div>
+    </div>
+  </div>
+</div>
+
+<!-- 미디어 미리보기 팝업 -->
+<div class="overlay" id="mediaPreviewOverlay" style="z-index:9500">
+  <div class="overlay-dialog" style="max-width:860px;width:95%">
+    <div class="overlay-header" style="justify-content:center;position:relative">
+      <span class="overlay-title" id="mpTitle">미리보기</span>
+      <button class="overlay-close" id="mpClose" style="position:absolute;right:20px">✕</button>
+    </div>
+    <div class="overlay-body" id="mpBody" style="padding:20px;text-align:center"></div>
+    <div class="media-url-panel" style="padding:12px 20px;border-top:1px solid var(--gray-200);background:var(--gray-50)">
+      <label for="mpUrlText" style="display:block;margin-bottom:5px;text-align:left;font-size:12px;font-weight:600;color:var(--gray-600)">Resource URL</label>
+      <input type="text" class="form-control" id="mpUrlText" readonly>
+    </div>
+    <div class="overlay-footer" style="justify-content:center">
+      <button type="button" class="btn btn-outline btn-sm" id="mpCopyUrlBtn">📋 URL 복사</button>
+    </div>
+  </div>
+</div>
+
+<!-- 캠페인 상세 오버레이 -->
+<div class="overlay" id="campaignDetailOverlay">
+  <div class="overlay-dialog" style="max-width:900px">
+    <div class="overlay-header" style="justify-content:center;position:relative">
+      <span class="overlay-title" id="cdTitle">캠페인 상세</span>
+      <button class="overlay-close" id="cdClose" style="position:absolute;right:20px">✕</button>
+    </div>
+    <div class="overlay-body" id="cdBody"></div>
+    <div class="overlay-footer" id="cdFooter"></div>
+  </div>
+</div>
+
+<!-- 광고주 상세 오버레이 -->
+<div class="overlay" id="advDetailOverlay">
+  <div class="overlay-dialog" style="max-width:700px">
+    <div class="overlay-header" style="justify-content:center;position:relative">
+      <span class="overlay-title" id="adTitle">광고주 상세</span>
+      <button class="overlay-close" id="adClose" style="position:absolute;right:20px">✕</button>
+    </div>
+    <div class="overlay-body" id="adBody"></div>
+    <div class="overlay-footer" id="adFooter"></div>
+  </div>
+</div>
+
+<!-- 사업자등록증 미리보기 -->
+<div class="overlay" id="bizCertPreviewOverlay" style="z-index:9600">
+  <div class="overlay-dialog">
+    <div class="overlay-header" style="position:relative">
+      <span class="overlay-title" id="bizCertPreviewTitle">사업자등록증</span>
+      <button class="overlay-close" id="bizCertPreviewClose" style="position:absolute;right:20px">✕</button>
+    </div>
+    <div class="overlay-body" id="bizCertPreviewBody"></div>
+    <div class="overlay-footer">
+      <button type="button" class="btn btn-ghost" onclick="closeBizCertPreview()">닫기</button>
+      <a class="btn btn-primary" id="bizCertDownloadBtn" href="#">📥 다운로드</a>
+    </div>
+  </div>
+</div>
+
+<script src="/js/alert.js"></script>
+<script src="/js/session.js"></script>
+<script src="/js/grid.js"></script>
+<script>
+  SessionManager.setLogoutUrl('/supervisor');
+  SessionManager.setHeartbeatUrl('/api/auth/heartbeat');
+
+  let campaignGrid = null;
+  let advGrid      = null;
+  let supervisorNotifications = [];
+  let supervisorNotificationStream = null;
+
+  // ── 인증 확인 ───────────────────────────────────────────────
+  async function checkAuth() {
+    const res  = await fetch('/api/admin/me');
+    const data = await res.json();
+    if (!data.ok) { window.location.href = '/supervisor'; return; }
+    document.getElementById('hdrName').textContent = data.user.username + ' (관리자)';
+    initGrids();
+    loadSupervisorNotifications();
+    connectSupervisorNotifications();
+    window.setInterval(loadSupervisorNotifications, 30000);
+  }
+
+  document.getElementById('supervisorNotificationBtn').addEventListener('click', event => {
+    event.stopPropagation();
+    document.getElementById('supervisorNotificationPanel').classList.toggle('open');
+  });
+  document.getElementById('supervisorNotificationPanel').addEventListener('click', event => event.stopPropagation());
+  document.addEventListener('click', () => document.getElementById('supervisorNotificationPanel').classList.remove('open'));
+  document.getElementById('supervisorNotificationReadAll').addEventListener('click', async () => {
+    const res = await fetch('/api/notifications/supervisor/read-all', { method: 'PUT' });
+    if (!res.ok) return;
+    supervisorNotifications.forEach(item => item.is_read = 1);
+    renderSupervisorNotifications();
+  });
+
+  async function loadSupervisorNotifications() {
+    try {
+      const res = await fetch('/api/notifications/supervisor/list');
+      const data = await res.json();
+      if (!res.ok) return;
+      supervisorNotifications = data.data || [];
+      renderSupervisorNotifications();
+    } catch {}
+  }
+
+  function connectSupervisorNotifications() {
+    supervisorNotificationStream?.close();
+    supervisorNotificationStream = new EventSource('/api/notifications/supervisor/stream');
+    supervisorNotificationStream.addEventListener('notification', event => {
+      const notification = JSON.parse(event.data);
+      supervisorNotifications.unshift(notification);
+      supervisorNotifications = supervisorNotifications.slice(0, 100);
+      renderSupervisorNotifications();
+      MxAlert.toast(notification.title, 'info', 5000);
+      campaignGrid?.load();
+    });
+  }
+
+  function renderSupervisorNotifications() {
+    const unread = supervisorNotifications.filter(item => !Number(item.is_read)).length;
+    const badge = document.getElementById('supervisorNotificationBadge');
+    badge.textContent = unread > 99 ? '99+' : String(unread);
+    badge.style.display = unread ? 'flex' : 'none';
+    const list = document.getElementById('supervisorNotificationList');
+    list.innerHTML = supervisorNotifications.length ? supervisorNotifications.map(item => `
+      <div class="supervisor-notification-item ${Number(item.is_read) ? '' : 'unread'}" data-id="${item.id}">
+        <div class="supervisor-notification-title">${escapeNotificationHtml(item.title)}</div>
+        <div class="supervisor-notification-message">${escapeNotificationHtml(item.message)}</div>
+        <div class="supervisor-notification-date">${new Date(item.created_at).toLocaleString('ko-KR')}</div>
+      </div>`).join('') : '<div class="supervisor-notification-empty">새로운 알림이 없습니다.</div>';
+    list.querySelectorAll('.supervisor-notification-item').forEach(element => element.addEventListener('click', async () => {
+      const item = supervisorNotifications.find(row => String(row.id) === element.dataset.id);
+      if (!item || Number(item.is_read)) return;
+      const res = await fetch(`/api/notifications/supervisor/${item.id}/read`, { method: 'PUT' });
+      if (res.ok) { item.is_read = 1; renderSupervisorNotifications(); }
+    }));
+  }
+
+  function escapeNotificationHtml(value) {
+    return String(value ?? '').replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[char]));
+  }
+
+  // ── 탭 전환 ─────────────────────────────────────────────────
+  let advGridLoaded = false;
+  let statsLoaded   = false;
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+
+      if (btn.dataset.tab === 'advertisers' && !advGridLoaded && advGrid) {
+        advGridLoaded = true;
+        advGrid.load();
+      }
+      if (btn.dataset.tab === 'stats') {
+        loadStats();
+      }
+    });
+  });
+
+  // ── 현황 → 캠페인 관리 이동 ────────────────────────────────
+  function goCampaigns({ advertiser = '', status = '' } = {}) {
+    // 모든 필터 초기화 후 지정 조건 적용
+    document.getElementById('sAdvertiser').value     = advertiser;
+    document.getElementById('sCampaignStatus').value = status;
+    document.getElementById('sCampaignName').value   = '';
+    document.getElementById('sRegFrom').value        = '';
+    document.getElementById('sRegTo').value          = '';
+    document.getElementById('sFromDate').value       = '';
+    document.getElementById('sToDate').value         = '';
+
+    // 캠페인 관리 탭으로 전환
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    document.querySelector('[data-tab="campaigns"]').classList.add('active');
+    document.getElementById('tab-campaigns').classList.add('active');
+
+    // 그리드 검색
+    campaignGrid.search({ advertiser, status });
+  }
+
+  // ── 현황 통계 ───────────────────────────────────────────────
+  async function loadStats() {
+    const res  = await fetch('/api/admin/stats');
+    const data = await res.json();
+    if (!data.ok) return;
+
+    // 1. 상태별 개수 + 클릭 핸들러
+    document.getElementById('st-total').textContent = data.total.toLocaleString('ko-KR');
+    ['입금전','입금확인','광고중','광고종료','취소'].forEach(s => {
+      const el = document.getElementById('st-' + s);
+      if (el) el.textContent = (data.statusMap[s] || 0).toLocaleString('ko-KR');
+    });
+    document.querySelectorAll('.stat-box.clickable').forEach(box => {
+      box.onclick = () => goCampaigns({ status: box.dataset.status });
+    });
+
+    // 2. 광고비
+    const fmt = v => Number(v).toLocaleString('ko-KR') + '원';
+    const pct  = data.totalFee > 0 ? Math.round(data.paidFee / data.totalFee * 100) : 0;
+    const upct = data.totalFee > 0 ? (100 - pct) : 0;
+    document.getElementById('fee-total').textContent    = fmt(data.totalFee);
+    document.getElementById('fee-paid').textContent     = fmt(data.paidFee);
+    document.getElementById('fee-paid-pct').textContent = pct + '%';
+    document.getElementById('fee-unpaid').textContent   = fmt(data.totalFee - data.paidFee);
+    document.getElementById('fee-unpaid-pct').textContent = upct + '%';
+    document.getElementById('fee-pct').textContent      = pct + '%';
+    document.getElementById('fee-bar').style.width      = pct + '%';
+
+    // 3-a. 매출 상위 5
+    const rankColors = ['gold','silver','bronze','',''];
+    const revRows = data.topRevenue.length
+      ? data.topRevenue.map((r, i) => `
+          <tr class="clickable-row" data-company="${r.company_name}">
+            <td style="text-align:center"><span class="rank-num ${rankColors[i]}">${i+1}</span></td>
+            <td>${r.company_name}</td>
+            <td style="text-align:right;font-weight:600;color:var(--primary)">${Number(r.revenue).toLocaleString('ko-KR')}원</td>
+            <td style="text-align:right">${r.campaign_count}개</td>
+          </tr>`).join('')
+      : '<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--gray-400)">데이터 없음</td></tr>';
+    document.getElementById('rankRevBody').innerHTML = revRows;
+
+    // 3-b. 캠페인 등록 상위 5
+    const cntRows = data.topCount.length
+      ? data.topCount.map((r, i) => `
+          <tr class="clickable-row" data-company="${r.company_name}">
+            <td style="text-align:center"><span class="rank-num ${rankColors[i]}">${i+1}</span></td>
+            <td>${r.company_name}</td>
+            <td style="text-align:right;font-weight:700;color:var(--gray-900)">${r.campaign_count}개</td>
+            <td style="text-align:right;color:var(--primary)">${Number(r.revenue).toLocaleString('ko-KR')}원</td>
+          </tr>`).join('')
+      : '<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--gray-400)">데이터 없음</td></tr>';
+    document.getElementById('rankCntBody').innerHTML = cntRows;
+
+    // 랭킹 행 클릭 → 해당 광고주로 캠페인 조회
+    document.querySelectorAll('#rankRevBody tr.clickable-row, #rankCntBody tr.clickable-row').forEach(tr => {
+      tr.addEventListener('click', () => goCampaigns({ advertiser: tr.dataset.company }));
+    });
+  }
+
+  // ── 그리드 초기화 ───────────────────────────────────────────
+  function initGrids() {
+    campaignGrid = new DataGrid({
+      container:  '#campaignGridContainer',
+      fetchUrl:   '/api/admin/campaigns',
+      excelUrl:   '/api/admin/campaigns/excel/download',
+      pageSize:   10,
+      columnAdjustable: true,
+      columnStorageKey: 'admin-campaign-grid-columns',
+      columnAdjustContainer: '#campaignColumnAdjustSlot',
+      columns: [
+        { key: 'company_name',   label: '광고주',       width: '150px' },
+        { key: 'id',             label: '캠페인 ID',    width: '110px' },
+        { key: 'campaign_name',  label: '캠페인명',     width: '180px' },
+        { key: 'has_image', label: '이미지', width: '200px',
+          render: (v, row) => {
+            if (!v) return '';
+            if (!row.image_url) return '<span style="color:var(--success);font-size:11px">●파일</span>';
+            const enc = encodeURIComponent(row.image_url);
+            const w = Number(row.image_width)||0, h = Number(row.image_height)||0;
+            return '<div style="display:flex;align-items:center;justify-content:center">'
+              + `<button class="btn btn-ghost btn-sm" style="flex-shrink:0;padding:2px 8px;font-size:11px" onclick="event.stopPropagation();openMediaPreview('image',decodeURIComponent('${enc}'),${w},${h})" title="이미지 보기">보기</button>`
+              + '</div>';
+          }},
+        { key: 'has_html', label: 'HTML', width: '200px',
+          render: (v, row) => {
+            if (!v) return '';
+            if (!row.html_url) return '<span style="color:var(--success);font-size:11px">●파일</span>';
+            const enc = encodeURIComponent(row.html_url);
+            return '<div style="display:flex;align-items:center;justify-content:center">'
+              + `<button class="btn btn-ghost btn-sm" style="flex-shrink:0;padding:2px 8px;font-size:11px" onclick="event.stopPropagation();openMediaPreview('html',decodeURIComponent('${enc}'),0,0)" title="HTML 보기">보기</button>`
+              + '</div>';
+          }},
+        { key: 'has_youtube', label: 'YouTube', width: '200px',
+          render: (v, row) => {
+            if (!v || !row.youtube_url) return v ? '<span style="color:var(--success);font-size:11px">●</span>' : '';
+            const enc = encodeURIComponent(row.youtube_url);
+            return '<div style="display:flex;align-items:center;justify-content:center">'
+              + `<button class="btn btn-ghost btn-sm" style="flex-shrink:0;padding:2px 8px;font-size:11px;color:#dc2626" onclick="event.stopPropagation();openMediaPreview('youtube',decodeURIComponent('${enc}'),0,0)" title="YouTube 보기">보기</button>`
+              + '</div>';
+          }},
+        { key: 'from_date',      label: '시작일',       width: '95px',
+          render: v => v ? v.split('T')[0] : '' },
+        { key: 'to_date',        label: '종료일',       width: '95px',
+          render: v => v ? v.split('T')[0] : '' },
+        { key: 'total_fee',      label: '광고료(원)',   width: '110px', align:'right', sortType:'number',
+          render: v => Number(v).toLocaleString('ko-KR') },
+        { key: 'quotation_read', label: '견적서', width: '80px', align:'center',
+          render: (v, row) => {
+            if (!row.quotation_sent_at) return '<span style="color:var(--gray-400);font-size:11px">미발송</span>';
+            if (v) return '<span style="color:var(--success);font-weight:600;font-size:11px">✓ 확인</span>';
+            return '<span style="color:var(--warning);font-weight:600;font-size:11px">미확인</span>';
+          }},
+        { key: 'payment_confirmed_at', label: '입금확인일', width: '95px', align:'center',
+          render: v => v ? (v+'').split('T')[0] : '<span style="color:var(--gray-300)">-</span>' },
+        { key: 'approved_at',  label: '승인일',   width: '95px', align:'center',
+          render: v => v ? (v+'').split('T')[0] : '<span style="color:var(--gray-300)">-</span>' },
+        { key: 'cancelled_at', label: '취소일',   width: '95px', align:'center',
+          render: v => v ? `<span style="color:var(--danger)">${(v+'').split('T')[0]}</span>` : '<span style="color:var(--gray-300)">-</span>' },
+        { key: 'advertiser_status', label: '광고주인증', width: '85px', align:'center',
+          render: v => `<span class="badge badge-${v}">${statusLabel(v)}</span>` },
+        { key: 'status',         label: '캠페인상태',  width: '85px', align:'center',
+          render: v => `<span class="badge badge-${v}">${v}</span>` },
+      ],
+      onRowDblClick: openCampaignDetail,
+    });
+    campaignGrid.bindExcelButton('#excelCampaignBtn');
+    campaignGrid.load();
+
+    advGrid = new DataGrid({
+      container:  '#advGridContainer',
+      fetchUrl:   '/api/admin/advertisers',
+      excelUrl:   '/api/admin/advertisers/excel/download',
+      pageSize:   10,
+      columnAdjustable: true,
+      columnStorageKey: 'admin-advertiser-grid-columns',
+      columnAdjustContainer: '#advColumnAdjustSlot',
+      columns: [
+        { key: 'company_name',   label: '회사명',       width: '160px' },
+        { key: 'business_no',    label: '사업자번호',   width: '120px', render: v => formatBusinessNo(v) },
+        { key: 'contact_name',   label: '담당자',       width: '100px' },
+        { key: 'contact_email',  label: '이메일',       width: '180px' },
+        { key: 'contact_mobile', label: '연락처',       width: '130px' },
+        { key: 'biz_cert_name',  label: '사업자등록증', width: '100px', align:'center',
+          render: (v, row) => row.biz_cert_path
+            ? `<button type="button" class="btn btn-ghost btn-sm" style="font-size:11px" onclick="event.stopPropagation();openBizCertPreview(${row.id},decodeURIComponent('${encodeURIComponent(row.biz_cert_name || '사업자등록증')}'))">보기</button>`
+            : '-' },
+        { key: 'status',         label: '인증상태',     width: '80px', align:'center',
+          render: v => `<span class="badge badge-${v}">${statusLabel(v)}</span>` },
+        { key: 'created_at',     label: '가입일',       width: '95px',
+          render: v => v ? v.split('T')[0] : '' },
+      ],
+      onRowDblClick: openAdvDetail,
+    });
+    advGrid.bindExcelButton('#excelAdvBtn');
+  }
+
+  function statusLabel(v) {
+    return { pending:'심사중', approved:'승인', rejected:'취소', terminated:'종료' }[v] || v;
+  }
+
+  function formatBusinessNo(value) {
+    const digits = String(value || '').replace(/\D/g, '').slice(0, 10);
+    if (digits.length <= 3) return digits;
+    if (digits.length <= 5) return `${digits.slice(0, 3)}-${digits.slice(3)}`;
+    return `${digits.slice(0, 3)}-${digits.slice(3, 5)}-${digits.slice(5)}`;
+  }
+
+  // ── 캠페인 검색 ─────────────────────────────────────────────
+  document.getElementById('searchCampaignBtn').addEventListener('click', () => {
+    campaignGrid.search({
+      advertiser:    document.getElementById('sAdvertiser').value,
+      campaign_name: document.getElementById('sCampaignName').value,
+      status:        document.getElementById('sCampaignStatus').value,
+      reg_from:      document.getElementById('sRegFrom').value,
+      reg_to:        document.getElementById('sRegTo').value,
+      from_date:     document.getElementById('sFromDate').value,
+      to_date:       document.getElementById('sToDate').value,
+    });
+  });
+  document.getElementById('resetCampaignBtn').addEventListener('click', () => {
+    ['sAdvertiser','sCampaignName','sRegFrom','sRegTo','sFromDate','sToDate'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('sCampaignStatus').value = '';
+    campaignGrid.search({});
+  });
+
+  // ── 광고주 검색 ─────────────────────────────────────────────
+  document.getElementById('searchAdvBtn').addEventListener('click', () => {
+    advGrid.search({
+      company_name: document.getElementById('sAdvCompany').value,
+      status:       document.getElementById('sAdvStatus').value,
+    });
+  });
+  document.getElementById('resetAdvBtn').addEventListener('click', () => {
+    document.getElementById('sAdvCompany').value = '';
+    document.getElementById('sAdvStatus').value  = '';
+    advGrid.search({});
+  });
+
+  // ── 로그아웃 ────────────────────────────────────────────────
+  document.getElementById('logoutBtn').addEventListener('click', async () => {
+    const ok = await MxAlert.confirm('로그아웃하시겠습니까?');
+    if (!ok) return;
+    await fetch('/api/admin/logout', { method: 'POST' });
+    window.location.href = '/supervisor';
+  });
+
+  // ── 캠페인 상세 오버레이 ────────────────────────────────────
+  async function openCampaignDetail(row) {
+    const res  = await fetch(`/api/admin/campaigns/${row.id}`);
+    const data = await res.json();
+    if (!data.ok) return MxAlert.error('데이터 조회 실패');
+    const c = data.data;
+    const adTypes = [];
+    if (c.has_image)   adTypes.push('이미지');
+    if (c.has_html)    adTypes.push('HTML');
+    if (c.has_youtube) adTypes.push('YouTube');
+
+    document.getElementById('cdTitle').textContent = `캠페인 상세 - ${c.campaign_name}`;
+    document.getElementById('cdBody').innerHTML = `
+      <h4 style="margin-bottom:12px;color:var(--gray-500);font-size:12px;font-weight:600">광고주 정보</h4>
+      <div class="detail-grid" style="margin-bottom:24px">
+        <div class="detail-item"><span class="detail-label">회사명</span><span class="detail-value">${c.company_name}</span></div>
+        <div class="detail-item"><span class="detail-label">사업자번호</span><span class="detail-value">${formatBusinessNo(c.business_no)}</span></div>
+        <div class="detail-item"><span class="detail-label">대표자</span><span class="detail-value">${c.ceo_name}</span></div>
+        <div class="detail-item"><span class="detail-label">담당자</span><span class="detail-value">${c.contact_name}</span></div>
+        <div class="detail-item"><span class="detail-label">담당자 이메일</span><span class="detail-value">${c.contact_email}</span></div>
+        <div class="detail-item"><span class="detail-label">담당자 연락처</span><span class="detail-value">${c.contact_mobile}</span></div>
+      </div>
+      <h4 style="margin-bottom:12px;color:var(--gray-500);font-size:12px;font-weight:600">캠페인 정보</h4>
+      <div class="detail-grid">
+        <div class="detail-item"><span class="detail-label">캠페인 ID</span><span class="detail-value">${c.id}</span></div>
+        <div class="detail-item"><span class="detail-label">상태</span><span class="detail-value"><span class="badge badge-${c.status}">${c.status}</span></span></div>
+        <div class="detail-item"><span class="detail-label">광고물 유형</span><span class="detail-value">${adTypes.join(', ')}</span></div>
+        <div class="detail-item"><span class="detail-label">광고 기간</span><span class="detail-value">${(c.from_date||'').split('T')[0]} ~ ${(c.to_date||'').split('T')[0]} (${c.ad_days}일)</span></div>
+        <div class="detail-item"><span class="detail-label">기본 광고료</span><span class="detail-value">${Number(c.base_fee).toLocaleString('ko-KR')}원</span></div>
+        <div class="detail-item"><span class="detail-label">부가세</span><span class="detail-value">${Number(c.vat).toLocaleString('ko-KR')}원</span></div>
+        <div class="detail-item"><span class="detail-label">총 광고료</span><span class="detail-value" style="font-size:18px;font-weight:700;color:var(--primary)">${Number(c.total_fee).toLocaleString('ko-KR')}원</span></div>
+        <div class="detail-item"><span class="detail-label">견적서 발송</span><span class="detail-value">${c.quotation_sent_at ? (c.quotation_sent_at+'').split('T')[0] : '-'}</span></div>
+        <div class="detail-item"><span class="detail-label">견적서 읽음</span><span class="detail-value">${c.quotation_read_at ? '<span style="color:var(--success)">읽음 (' + (c.quotation_read_at+'').split('T')[0] + ')</span>' : '<span style="color:var(--gray-400)">미읽음</span>'}</span></div>
+        <div class="detail-item"><span class="detail-label">입금확인일</span><span class="detail-value">${c.payment_confirmed_at ? (c.payment_confirmed_at+'').split('T')[0] + (c.payment_confirmed_by ? ' (' + c.payment_confirmed_by + ')' : '') : '-'}</span></div>
+        <div class="detail-item"><span class="detail-label">승인일</span><span class="detail-value">${c.approved_at ? (c.approved_at+'').split('T')[0] + (c.approved_by ? ' (' + c.approved_by + ')' : '') : '-'}</span></div>
+        ${c.cancelled_at ? `<div class="detail-item"><span class="detail-label">취소일</span><span class="detail-value" style="color:var(--danger)">${(c.cancelled_at+'').split('T')[0]}${c.cancelled_by ? ' (' + c.cancelled_by + ')' : ''}</span></div>` : ''}
+        ${c.image_url   ? `<div class="detail-item"><span class="detail-label">이미지 URL</span><span class="detail-value" style="display:flex;align-items:center;gap:6px"><a href="${c.image_url}" target="_blank" style="color:var(--primary);word-break:break-all">${c.image_url}</a><button onclick="navigator.clipboard.writeText('${c.image_url}').then(()=>MxAlert.toast('복사되었습니다','success'))" style="flex-shrink:0;background:none;border:1px solid var(--gray-300);border-radius:4px;padding:2px 6px;cursor:pointer;font-size:12px;color:var(--gray-500)" title="주소 복사">📋</button></span></div>` : ''}
+        ${c.html_url    ? `<div class="detail-item"><span class="detail-label">HTML URL</span><a href="${c.html_url}" target="_blank" style="color:var(--primary)">${c.html_url}</a></div>` : ''}
+        ${c.youtube_url ? `<div class="detail-item"><span class="detail-label">YouTube</span><span class="detail-value" style="display:flex;align-items:center;gap:6px"><a href="${c.youtube_url}" target="_blank" style="color:var(--primary);word-break:break-all">${c.youtube_url}</a><button onclick="navigator.clipboard.writeText('${c.youtube_url}').then(()=>MxAlert.toast('복사되었습니다','success'))" style="flex-shrink:0;background:none;border:1px solid var(--gray-300);border-radius:4px;padding:2px 6px;cursor:pointer;font-size:12px;color:var(--gray-500)" title="주소 복사">📋</button></span></div>` : ''}
+        ${c.description ? `<div class="detail-item detail-full"><span class="detail-label">설명</span><span class="detail-value">${c.description}</span></div>` : ''}
+      </div>
+      ${(c.image_url || c.html_url || c.youtube_url) ? (() => {
+        const ytId = c.youtube_url ? extractYouTubeId(c.youtube_url) : null;
+        let th = '';
+        if (c.image_url) {
+          const dim = (c.image_width && c.image_height) ? `<div style="margin-top:5px;font-size:11px;color:var(--gray-400)">${c.image_width} × ${c.image_height}px</div>` : '';
+          th += `<div style="flex:1;min-width:160px;max-width:240px"><div style="font-size:11px;font-weight:700;color:#2563eb;margin-bottom:6px">🖼️ 이미지</div><div style="position:relative;cursor:pointer;border-radius:8px;overflow:hidden;border:1px solid var(--gray-200);background:#f8faff" onclick="openMediaPreview('image','${c.image_url}',${c.image_width||0},${c.image_height||0})"><img src="${c.image_url}" style="width:100%;height:130px;object-fit:cover;display:block" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div style="display:none;height:130px;align-items:center;justify-content:center;color:var(--gray-400);font-size:12px">이미지 로드 실패</div><div class="thumb-hover-mask">🔍 미리보기</div></div>${dim}</div>`;
+        }
+        if (c.html_url) {
+          th += `<div style="flex:1;min-width:160px;max-width:240px"><div style="font-size:11px;font-weight:700;color:#16a34a;margin-bottom:6px">📄 HTML</div><div style="position:relative;cursor:pointer;border-radius:8px;overflow:hidden;border:1px solid var(--gray-200);background:#f0fff4;height:130px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px" onclick="openMediaPreview('html','${c.html_url}',0,0)"><span style="font-size:36px">📄</span><span style="font-size:11px;color:var(--gray-500)">HTML 광고</span><div class="thumb-hover-mask">🔍 미리보기</div></div></div>`;
+        }
+        if (c.youtube_url && ytId) {
+          th += `<div style="flex:1;min-width:160px;max-width:240px"><div style="font-size:11px;font-weight:700;color:#dc2626;margin-bottom:6px">▶ YouTube</div><div style="position:relative;cursor:pointer;border-radius:8px;overflow:hidden;border:1px solid #fecaca" onclick="openMediaPreview('youtube','${c.youtube_url}',0,0)"><img src="https://img.youtube.com/vi/${ytId}/hqdefault.jpg" style="width:100%;height:130px;object-fit:cover;display:block"><div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center"><svg width="48" height="34" viewBox="0 0 48 34"><rect width="48" height="34" rx="8" fill="#FF0000" opacity=".9"/><polygon points="20,9 20,25 35,17" fill="white"/></svg></div><div class="thumb-hover-mask">🔍 미리보기</div></div></div>`;
+        }
+        return th ? `<div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--gray-200)"><div style="font-size:12px;font-weight:600;color:var(--gray-500);margin-bottom:10px">광고물 미리보기</div><div style="display:flex;gap:12px;flex-wrap:wrap">${th}</div></div>` : '';
+      })() : ''}
+    `;
+
+    const footer = document.getElementById('cdFooter');
+    footer.innerHTML = '';
+    footer.style.justifyContent = 'center';
+
+    // 입금확인 버튼 (입금전 상태)
+    if (c.status === '입금전') {
+      const payBtn = document.createElement('button');
+      payBtn.className = 'btn btn-success';
+      payBtn.textContent = '✅ 입금 확인';
+      payBtn.addEventListener('click', () => confirmPayment(c.id));
+      footer.appendChild(payBtn);
+    }
+
+    // 승인 버튼 (입금확인 → 광고중)
+    if (c.status === '입금확인') {
+      const apvBtn = document.createElement('button');
+      apvBtn.className = 'btn btn-primary';
+      apvBtn.textContent = '▶ 광고 승인 (광고중 전환)';
+      apvBtn.addEventListener('click', () => confirmApprove(c.id));
+      footer.appendChild(apvBtn);
+    }
+
+    // 취소 버튼 (취소·종료 제외)
+    if (!['취소', '광고종료'].includes(c.status)) {
+      const cancelBtn = document.createElement('button');
+      cancelBtn.className = 'btn btn-danger';
+      cancelBtn.textContent = '✕ 캠페인 취소';
+      cancelBtn.addEventListener('click', () => confirmCancelCampaign(c.id));
+      footer.appendChild(cancelBtn);
+    }
+
+    const closeBtn = document.createElement('button');
+    closeBtn.className = 'btn btn-ghost';
+    closeBtn.textContent = '닫기';
+    closeBtn.addEventListener('click', () => closeOverlay('campaignDetailOverlay'));
+    footer.appendChild(closeBtn);
+
+    openOverlay('campaignDetailOverlay');
+  }
+
+  async function confirmApprove(campaignId) {
+    const ok = await MxAlert.confirm('캠페인을 승인하여 광고중으로 전환하시겠습니까?', {
+      type: 'primary', confirmText: '승인', confirmColor: 'primary'
+    });
+    if (!ok) return;
+    try {
+      const res  = await fetch(`/api/admin/campaigns/${campaignId}/approve`, { method: 'PUT' });
+      const data = await res.json();
+      if (!res.ok) return MxAlert.error(data.error);
+      closeOverlay('campaignDetailOverlay');
+      MxAlert.toast('캠페인이 광고중으로 전환되었습니다.', 'success');
+      campaignGrid.load();
+    } catch { MxAlert.error('서버 오류'); }
+  }
+
+  async function confirmCancelCampaign(campaignId) {
+    const ok = await MxAlert.confirm('캠페인을 취소하시겠습니까?\n취소 후에는 되돌릴 수 없으며 광고주에게 안내 메일이 발송됩니다.', {
+      type: 'danger', confirmText: '취소 처리', confirmColor: 'danger'
+    });
+    if (!ok) return;
+    try {
+      const res  = await fetch(`/api/admin/campaigns/${campaignId}/cancel`, { method: 'PUT' });
+      const data = await res.json();
+      if (!res.ok) return MxAlert.error(data.error);
+      closeOverlay('campaignDetailOverlay');
+      MxAlert.toast('캠페인이 취소 처리되었습니다.', 'success');
+      campaignGrid.load();
+    } catch { MxAlert.error('서버 오류'); }
+  }
+
+  async function confirmPayment(campaignId) {
+    const ok = await MxAlert.confirm('입금이 확인되었습니다. 캠페인을 승인하시겠습니까?', {
+      type: 'success', confirmText: '입금 확인', confirmColor: 'success'
+    });
+    if (!ok) return;
+    try {
+      const res  = await fetch(`/api/admin/campaigns/${campaignId}/payment`, { method: 'PUT' });
+      const data = await res.json();
+      if (!res.ok) return MxAlert.error(data.error);
+      closeOverlay('campaignDetailOverlay');
+      MxAlert.toast(`입금 확인 완료. 상태: ${data.newStatus}`, 'success');
+      campaignGrid.load();
+    } catch { MxAlert.error('서버 오류'); }
+  }
+
+  document.getElementById('cdClose').addEventListener('click', () => closeOverlay('campaignDetailOverlay'));
+
+  // ── 미디어 미리보기 ─────────────────────────────────────────
+  document.getElementById('mpClose').addEventListener('click', () => {
+    document.getElementById('mpBody').innerHTML = '';
+    closeOverlay('mediaPreviewOverlay');
+  });
+  document.getElementById('mpCopyUrlBtn').addEventListener('click', async () => {
+    const url = document.getElementById('mpUrlText').value || '';
+    if (!url) return;
+    try {
+      await navigator.clipboard.writeText(url);
+      MxAlert.toast('URL이 복사되었습니다', 'success');
+    } catch {
+      MxAlert.error('URL을 복사하지 못했습니다.');
+    }
+  });
+
+  function extractYouTubeId(url) {
+    const patterns = [
+      /[?&]v=([^&#]+)/,
+      /youtu\.be\/([^?#]+)/,
+      /youtube\.com\/embed\/([^?#]+)/,
+      /youtube\.com\/shorts\/([^?#]+)/,
+    ];
+    for (const p of patterns) {
+      const m = url.match(p);
+      if (m) return m[1];
+    }
+    return null;
+  }
+
+  function toAbsoluteResourceUrl(url) {
+    if (!url) return '';
+    try {
+      return new URL(url, window.location.origin).href;
+    } catch {
+      return url;
+    }
+  }
+
+  function openMediaPreview(type, url, w, h) {
+    const titles = { image: '이미지 미리보기', html: 'HTML 미리보기', youtube: 'YouTube 미리보기' };
+    const absoluteUrl = toAbsoluteResourceUrl(url);
+    const overlay = document.getElementById('mediaPreviewOverlay');
+    overlay.classList.toggle('media-type-image', type === 'image');
+    document.getElementById('mpTitle').textContent = titles[type] || '미리보기';
+    document.getElementById('mpCopyUrlBtn').dataset.url = absoluteUrl;
+    document.getElementById('mpUrlText').value = absoluteUrl;
+    let html = '';
+    if (type === 'image') {
+      const dim = (w && h) ? `<p style="margin:8px 0 0;font-size:12px;color:var(--gray-400)">${w} × ${h}px</p>` : '';
+      html = `<img src="${absoluteUrl}" style="max-width:100%;max-height:72vh;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.15)">${dim}`;
+    } else if (type === 'html') {
+      html = `<iframe src="${absoluteUrl}" style="width:100%;height:68vh;border:1px solid var(--gray-200);border-radius:8px"></iframe>`;
+    } else if (type === 'youtube') {
+      const vid = extractYouTubeId(absoluteUrl);
+      html = `<div style="position:relative;padding-top:56.25%"><iframe src="https://www.youtube.com/embed/${vid}?autoplay=1&rel=0" style="position:absolute;inset:0;width:100%;height:100%;border:none;border-radius:8px" allowfullscreen allow="autoplay;encrypted-media;picture-in-picture"></iframe></div>`;
+    }
+    document.getElementById('mpBody').innerHTML = html;
+    openOverlay('mediaPreviewOverlay');
+  }
+
+  // ── 광고주 상세 오버레이 ────────────────────────────────────
+  function openBizCertPreview(advertiserId, filename) {
+    const viewUrl = `/api/admin/advertisers/${advertiserId}/biz-cert?inline=1`;
+    document.getElementById('bizCertPreviewTitle').textContent = `사업자등록증 - ${filename}`;
+    document.getElementById('bizCertDownloadBtn').href = `/api/admin/advertisers/${advertiserId}/biz-cert`;
+    const body = document.getElementById('bizCertPreviewBody');
+    body.innerHTML = '';
+    if (/\.(png|jpe?g|gif|webp)$/i.test(filename)) {
+      const img = document.createElement('img');
+      img.src = viewUrl; img.alt = filename;
+      img.style.cssText = 'display:block;max-width:100%;height:auto;margin:0 auto;background:#fff;box-shadow:0 2px 10px rgba(0,0,0,.12)';
+      body.appendChild(img);
+    } else {
+      const iframe = document.createElement('iframe');
+      iframe.src = viewUrl; iframe.title = filename;
+      iframe.style.cssText = 'display:block;width:100%;height:100%;min-height:560px;border:0;background:#fff';
+      body.appendChild(iframe);
+    }
+    openOverlay('bizCertPreviewOverlay');
+  }
+
+  function closeBizCertPreview() {
+    document.getElementById('bizCertPreviewBody').innerHTML = '';
+    closeOverlay('bizCertPreviewOverlay');
+  }
+
+  document.getElementById('bizCertPreviewClose').addEventListener('click', closeBizCertPreview);
+
+  function escapeAttr(value) {
+    return String(value ?? '').replace(/[&<>"']/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' })[ch]);
+  }
+
+  function openAdvDetail(row) {
+    document.getElementById('adTitle').textContent = `광고주 상세 - ${row.company_name}`;
+    const statusKr = { pending:'심사중', approved:'승인', rejected:'취소', terminated:'종료' };
+    document.getElementById('adBody').innerHTML = `
+      <div class="detail-grid">
+        <div class="detail-item"><label class="detail-label" for="editAdvCompany">회사명 <span class="required">*</span></label><input class="form-control" id="editAdvCompany" value="${escapeAttr(row.company_name)}" required></div>
+        <div class="detail-item"><label class="detail-label" for="editAdvBusinessNo">사업자번호 <span class="required">*</span></label><input class="form-control" id="editAdvBusinessNo" value="${formatBusinessNo(row.business_no)}" inputmode="numeric" maxlength="12" oninput="this.value=formatBusinessNo(this.value)" required></div>
+        <div class="detail-item"><label class="detail-label" for="editAdvContactName">담당자명 <span class="required">*</span></label><input class="form-control" id="editAdvContactName" value="${escapeAttr(row.contact_name)}" required></div>
+        <div class="detail-item"><label class="detail-label" for="editAdvContactEmail">담당자 이메일 <span class="required">*</span></label><input class="form-control" type="email" id="editAdvContactEmail" value="${escapeAttr(row.contact_email)}" required></div>
+        <div class="detail-item"><label class="detail-label" for="editAdvContactMobile">담당자 연락처 <span class="required">*</span></label><input class="form-control" id="editAdvContactMobile" value="${escapeAttr(row.contact_mobile)}" required></div>
+        <div class="detail-item"><span class="detail-label">현재 상태</span><span class="detail-value"><span class="badge badge-${row.status}">${statusKr[row.status]||row.status}</span></span></div>
+        <div class="detail-item"><span class="detail-label">가입일</span><span class="detail-value">${(row.created_at||'').split('T')[0]}</span></div>
+        <div class="detail-item"><span class="detail-label">사업자등록증</span>
+          <span class="detail-value">
+            ${row.biz_cert_path
+              ? `<a href="/api/admin/advertisers/${row.id}/biz-cert" class="btn btn-ghost btn-sm">📥 다운로드</a>`
+              : '<span style="color:var(--gray-400)">미첨부</span>'}
+          </span>
+        </div>
+      </div>
+
+      <div style="margin-top:24px;padding-top:20px;border-top:1px solid var(--gray-200)">
+        <h4 style="margin-bottom:12px;font-size:14px;font-weight:700">광고주 인증 처리</h4>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;justify-content:center">
+          <button class="btn btn-success btn-sm" onclick="updateAdvStatus(${row.id},'approved')">✅ 승인</button>
+          <button class="btn btn-warning btn-sm" onclick="showReasonBox('rejected',${row.id})">❌ 취소</button>
+          <button class="btn btn-danger btn-sm" onclick="showReasonBox('terminated',${row.id})">🚫 종료</button>
+        </div>
+        <div id="reasonBox" class="reason-box">
+          <label class="form-label" style="margin-bottom:6px">사유 입력 <span class="required">*</span></label>
+          <textarea class="form-control" id="advReason" rows="3" placeholder="취소/종료 사유를 입력하세요"></textarea>
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <button class="btn btn-danger btn-sm" id="reasonConfirmBtn">확인</button>
+            <button class="btn btn-ghost btn-sm" onclick="hideReasonBox()">취소</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const footer = document.getElementById('adFooter');
+    footer.innerHTML = `<button class="btn btn-ghost" onclick="closeOverlay('advDetailOverlay')">닫기</button><button class="btn btn-primary" onclick="saveAdvertiser(${row.id})">저장</button>`;
+    openOverlay('advDetailOverlay');
+  }
+
+  async function saveAdvertiser(advertiserId) {
+    const payload = {
+      company_name: document.getElementById('editAdvCompany').value.trim(),
+      business_no: document.getElementById('editAdvBusinessNo').value.replace(/\D/g, ''),
+      contact_name: document.getElementById('editAdvContactName').value.trim(),
+      contact_email: document.getElementById('editAdvContactEmail').value.trim(),
+      contact_mobile: document.getElementById('editAdvContactMobile').value.trim(),
+    };
+    if (Object.values(payload).some(value => !value)) return MxAlert.error('필수 항목을 모두 입력하세요.');
+    if (!/^\d{10}$/.test(payload.business_no)) return MxAlert.error('사업자등록번호는 숫자 10자리로 입력하세요.');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.contact_email)) return MxAlert.error('이메일 형식을 확인하세요.');
+
+    try {
+      const res = await fetch(`/api/admin/advertisers/${advertiserId}`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) return MxAlert.error(data.error || '광고주 정보 수정에 실패했습니다.');
+      closeOverlay('advDetailOverlay');
+      MxAlert.toast('광고주 정보가 수정되었습니다.', 'success');
+      advGrid.load();
+    } catch {
+      MxAlert.error('서버 연결에 실패했습니다.');
+    }
+  }
+
+  let pendingAdvStatus = null;
+  let pendingAdvId     = null;
+
+  function showReasonBox(status, advId) {
+    pendingAdvStatus = status;
+    pendingAdvId     = advId;
+    const box = document.getElementById('reasonBox');
+    box.classList.add('visible');
+    document.getElementById('advReason').focus();
+    document.getElementById('reasonConfirmBtn').onclick = () => applyAdvStatus();
+  }
+  function hideReasonBox() {
+    document.getElementById('reasonBox').classList.remove('visible');
+    document.getElementById('advReason').value = '';
+    pendingAdvStatus = null; pendingAdvId = null;
+  }
+
+  async function updateAdvStatus(advId, status) {
+    const ok = await MxAlert.confirm('광고주를 승인하시겠습니까?', { type: 'success', confirmText: '승인', confirmColor: 'success' });
+    if (!ok) return;
+    try {
+      const res  = await fetch(`/api/admin/advertisers/${advId}/status`, {
+        method: 'PUT', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ status }),
+      });
+      const data = await res.json();
+      if (!res.ok) return MxAlert.error(data.error);
+      closeOverlay('advDetailOverlay');
+      MxAlert.toast('광고주 승인 완료. 이메일이 발송되었습니다.', 'success');
+      advGrid.load();
+    } catch { MxAlert.error('서버 오류'); }
+  }
+
+  async function applyAdvStatus() {
+    const reason = document.getElementById('advReason').value.trim();
+    if (!reason) return MxAlert.error('사유를 입력하세요.');
+    try {
+      const res  = await fetch(`/api/admin/advertisers/${pendingAdvId}/status`, {
+        method: 'PUT', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ status: pendingAdvStatus, reason }),
+      });
+      const data = await res.json();
+      if (!res.ok) return MxAlert.error(data.error);
+      closeOverlay('advDetailOverlay');
+      MxAlert.toast('처리 완료. 광고주에게 이메일이 발송되었습니다.', 'success');
+      advGrid.load();
+    } catch { MxAlert.error('서버 오류'); }
+  }
+
+  document.getElementById('adClose').addEventListener('click', () => closeOverlay('advDetailOverlay'));
+
+  // ── 오버레이 유틸 ───────────────────────────────────────────
+  function openOverlay(id) {
+    const el = document.getElementById(id);
+    el.style.display = 'flex';
+    setTimeout(() => el.classList.add('visible'), 10);
+  }
+  function closeOverlay(id) {
+    const el = document.getElementById(id);
+    el.classList.remove('visible');
+    setTimeout(() => { el.style.display = 'none'; }, 210);
+  }
+
+  checkAuth();
+</script>
+</body>
+</html>
