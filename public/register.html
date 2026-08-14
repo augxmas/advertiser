@@ -66,7 +66,11 @@
 
     #submitBtn{justify-content:center}
 
-    .signup-stage{position:relative;transition:opacity .2s}
+    /* 세 단계가 같은 안쪽 여백을 갖도록 스테이지에 준다. 약관 동의는
+       내용이 padding 있는 박스라 여유가 있었지만 광고주 정보의 폼은
+       가장자리에 그대로 붙어, 잠금 상태의 점선 테두리가 글자 첫 획에
+       닿았다. */
+    .signup-stage{position:relative;transition:opacity .2s;padding-inline:18px}
     .signup-stage + .signup-stage{margin-top:44px}
     .signup-stage.locked{opacity:.55}
     .signup-stage.locked::after{
