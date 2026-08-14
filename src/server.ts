@@ -77,6 +77,9 @@ app.get('/register', (_req, res) => {
 app.get('/dashboard', (_req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'dashboard.html'));
 });
+app.get('/profile', (_req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'profile.html'));
+});
 app.get('/supervisor', (_req, res) => {
   res.sendFile(path.join(__dirname, '..', 'public', 'admin', 'index.html'));
 });
@@ -110,7 +113,18 @@ process.on('unhandledRejection', reason => writeErrorLog(reason, { type: 'unhand
 process.on('uncaughtException', error => writeErrorLog(error, { type: 'uncaught-exception' }));
 
 app.listen(PORT, () => {
-  console.log(`모노라마 광고 관리 시스템 실행 중: http://${process.env.BASE_URL || 'localhost'}:${PORT}`);
+  const localUrl = `http://localhost:${PORT}`;
+  // BASE_URL 은 견적서·이메일 링크의 기준이 되는 전체 URL(예: https://xxx.ngrok-free.app).
+  // 스킴 없이 호스트만 적힌 경우도 있어 보정한다.
+  const base = (process.env.BASE_URL || '').trim().replace(/\/+$/, '');
+  const publicUrl = base
+    ? (/^https?:\/\//i.test(base) ? base : `http://${base}:${PORT}`)
+    : '';
+
+  console.log(`모노라마 광고 관리 시스템 실행 중: ${localUrl}`);
+  if (publicUrl && publicUrl !== localUrl) {
+    console.log(`외부 접속 주소(BASE_URL): ${publicUrl}`);
+  }
 });
 
 export default app;

@@ -286,11 +286,15 @@ advertiser/
 ├── public/
 │   ├── index.html         # 광고주 로그인
 │   ├── register.html      # 광고주 회원가입
-│   ├── dashboard.html     # 광고주 대시보드
+│   ├── dashboard.html     # 광고주 대시보드 (broadsheet-app)
+│   ├── profile.html       # 광고주 내 정보 수정 (broadsheet-app)
 │   ├── admin/
 │   │   ├── index.html     # supervisor 로그인
 │   │   └── dashboard.html # supervisor 대시보드
-│   ├── css/common.css
+│   ├── css/common.css        # 구 스킨 — supervisor 화면
+│   ├── css/broadsheet.css    # 공개·진입 페이지 (home·index·register·404·500)
+│   ├── css/broadsheet-app.css # 로그인 이후 업무 화면 (dashboard·profile)
+│   │                          # ↑ 두 broadsheet 파일은 같은 페이지에서 함께 쓰지 않는다
 │   ├── js/
 │   │   ├── grid.js        # DataGrid 컴포넌트
 │   │   ├── alert.js       # MxAlert 토스트/모달
