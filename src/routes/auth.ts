@@ -1,6 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcrypt';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID as uuidv4 } from 'crypto';
 import pool from '../config/database';
 import { sendEmail, getSystemVars } from '../services/email.service';
 import { generateVerificationCode } from '../utils/id-generator';
