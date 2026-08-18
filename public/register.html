@@ -5,73 +5,116 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>광고주 회원가입 - 모노라마 광고 관리 시스템</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
-  <link rel="stylesheet" href="/css/common.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;1,400&family=Noto+Serif+KR:wght@400;500;600;700&family=IBM+Plex+Sans+KR:wght@700&display=swap">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.css">
+  <link rel="stylesheet" href="/css/broadsheet.css">
   <!-- 카카오 주소 검색 API -->
   <script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
   <style>
-    body { background: linear-gradient(135deg,#eff6ff 0%,#e0e7ff 100%); }
-    .reg-wrap { max-width: 720px; margin: 0 auto; padding: 40px 20px 60px; }
-    .reg-logo { text-align:center; margin-bottom:28px; }
-    .reg-logo h1 { font-size:22px; font-weight:800; color:var(--primary); }
-    .reg-logo p  { font-size:13px; color:var(--gray-500); margin-top:4px; }
-    .section-title {
-      font-size:14px; font-weight:700; color:var(--primary);
-      border-bottom:2px solid var(--primary); padding-bottom:6px;
-      margin-bottom:18px; margin-top:8px;
+    /* 회원가입 페이지 전용. 공용 토큰·버튼·폼은 /css/broadsheet.css */
+    .reg-wrap{max-width:760px;margin:0 auto;padding:clamp(40px,7vw,72px) var(--gutter) clamp(64px,9vw,96px)}
+    .reg-logo{margin-bottom:clamp(32px,5vw,48px)}
+    .reg-logo h1{font-size:clamp(28px,4.6vw,42px);line-height:1.16;letter-spacing:-.02em}
+    .reg-logo p{margin:12px 0 0;font-size:17px;color:color-mix(in srgb,var(--color-text) 72%,transparent)}
+
+    .section-title{
+      margin:0 0 22px;padding-bottom:10px;
+      border-bottom:1px solid var(--color-text);
+      font-family:var(--font-heading);font-weight:var(--font-heading-weight);
+      font-size:20px;letter-spacing:-.015em;color:var(--color-text);
     }
-    .form-row   { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
-    .form-row-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px; }
-    @media(max-width:600px) { .form-row, .form-row-3 { grid-template-columns:1fr; } }
-    .input-btn-row { display:flex; gap:8px; }
-    .input-btn-row .form-control { flex:1; }
-    .verify-row { display:flex; gap:8px; }
-    .verify-row .form-control { flex:1; }
-    .pw-strength { height:4px; border-radius:2px; margin-top:6px; transition:all .3s; background:#e5e7eb; }
-    .consent-box {
-      border:1px solid var(--gray-200); border-radius:8px; padding:16px; background:#fafafa;
+    .signup-stage + .signup-stage .section-title{margin-top:8px}
+
+    .form-row  {display:grid;grid-template-columns:1fr 1fr;gap:0 20px}
+    .form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 20px}
+    @media(max-width:600px){.form-row,.form-row-3{grid-template-columns:1fr}}
+
+    .input-btn-row,.verify-row{display:flex;gap:8px}
+    .input-btn-row .form-control,.verify-row .form-control{flex:1}
+
+    /* 높이·색은 JS가 강도에 따라 인라인으로 덮어쓴다 */
+    .pw-strength{height:3px;margin-top:8px;background:var(--color-surface);transition:all .3s}
+
+    /* 비밀번호 요건 실시간 체크리스트 */
+    .pw-req{margin:8px 0 0;padding:0;list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:1px 12px}
+    .pw-req li{
+      display:flex;align-items:center;gap:5px;
+      font-family:var(--font-label,inherit);font-size:12px;line-height:1.75;
+      color:var(--gray-500,#6b7280);transition:color .15s;
     }
-    .consent-box .consent-text {
-      max-height:120px; overflow-y:auto; font-size:12px; color:var(--gray-600); line-height:1.7;
-      background:#fff; border:1px solid var(--gray-200); border-radius:4px;
-      padding:10px; margin:8px 0;
+    .pw-req li::before{content:'○';flex:none;width:12px;text-align:center;font-size:10px}
+    .pw-req li.ok{color:var(--success,#16a34a)}
+    .pw-req li.ok::before{content:'✓';font-size:12px}
+
+    .consent-box{padding:18px;background:var(--color-surface)}
+    .consent-box .consent-text{
+      max-height:130px;overflow-y:auto;margin:10px 0;padding:14px;
+      background:var(--color-bg);border:1px solid var(--color-divider);
+      font-family:var(--font-label);font-size:12.5px;line-height:1.8;
+      color:color-mix(in srgb,var(--color-text) 72%,transparent);
     }
-    .file-drop {
-      border:2px dashed var(--gray-300); border-radius:8px; padding:28px;
-      text-align:center; color:var(--gray-500); cursor:pointer; transition:all .2s;
+    .consent-all{
+      margin-bottom:16px;padding:14px 16px;
+      background:var(--color-surface);border-left:2px solid var(--color-accent);
+      font-family:var(--font-heading);font-weight:var(--font-heading-weight);
     }
-    .file-drop:hover, .file-drop.drag { border-color:var(--primary); background:#eff6ff; }
-    .file-drop .icon { font-size:32px; display:block; margin-bottom:8px; }
-    .file-selected { color:var(--success); font-weight:600; font-size:13px; }
-    /* 읽기전용 주소 필드 */
-    .form-control[readonly] {
-      background:#f3f4f6; cursor:default; color:var(--gray-700);
+
+    .file-drop{
+      padding:32px;text-align:center;cursor:pointer;transition:all .16s;
+      border:1px dashed color-mix(in srgb,var(--color-text) 30%,transparent);
+      background:var(--color-surface);
+      font-family:var(--font-label);font-size:14px;
+      color:color-mix(in srgb,var(--color-text) 65%,transparent);
     }
-    /* 필드 오류 표시 */
-    .form-control.field-error { border-color:var(--danger); background:#fff8f8; }
-    /* 제출 버튼 텍스트 가운데 정렬 */
-    #submitBtn { justify-content: center; }
-    .signup-stage { position:relative; transition:opacity .2s; }
-    .signup-stage + .signup-stage { margin-top:28px; }
-    .signup-stage.locked { opacity:.55; }
-    .signup-stage.locked::after {
-      content:attr(data-lock-message); position:absolute; inset:0; z-index:3;
-      display:flex; align-items:flex-start; justify-content:center; padding-top:54px;
-      border:1px dashed var(--gray-300); border-radius:8px;
-      color:var(--gray-600); background:rgba(249,250,251,.72); font-size:13px; font-weight:700;
+    .file-drop:hover,.file-drop.drag{border-color:var(--color-accent);color:var(--color-accent-700)}
+    .file-drop .icon{display:block;margin-bottom:10px;font-size:30px}
+    .file-selected{font-family:var(--font-label);font-size:13px;font-weight:600;color:var(--color-success)}
+
+    .form-control[readonly]{background:color-mix(in srgb,var(--color-text) 6%,transparent);cursor:default}
+    .form-control.field-error{border-color:var(--color-danger);background:var(--color-danger-bg)}
+
+    #submitBtn{justify-content:center}
+
+    /* 세 단계가 같은 안쪽 여백을 갖도록 스테이지에 준다. 약관 동의는
+       내용이 padding 있는 박스라 여유가 있었지만 광고주 정보의 폼은
+       가장자리에 그대로 붙어, 잠금 상태의 점선 테두리가 글자 첫 획에
+       닿았다. */
+    .signup-stage{position:relative;transition:opacity .2s;padding-inline:18px}
+    .signup-stage + .signup-stage{margin-top:44px}
+    .signup-stage.locked{opacity:.55}
+    .signup-stage.locked::after{
+      content:attr(data-lock-message);position:absolute;inset:0;z-index:3;
+      display:flex;align-items:flex-start;justify-content:center;padding-top:60px;
+      border:1px dashed color-mix(in srgb,var(--color-text) 26%,transparent);
+      background:color-mix(in srgb,var(--color-bg) 74%,transparent);
+      font-family:var(--font-label);font-size:13px;font-weight:600;
+      color:color-mix(in srgb,var(--color-text) 72%,transparent);
     }
-    .flow-title { display:flex; align-items:center; gap:9px; }
-    .flow-number {
-      display:inline-grid; place-items:center; width:25px; height:25px; border-radius:50%;
-      color:#fff; background:var(--primary); font-size:12px; font-weight:800;
+
+    .flow-title{display:flex;align-items:center;gap:10px}
+    .flow-number{
+      display:inline-grid;place-items:center;width:26px;height:26px;flex:none;
+      background:var(--color-accent);color:var(--color-bg);
+      font-family:var(--font-label);font-size:12px;font-weight:600;
     }
-    .flow-guide { margin:-8px 0 16px; color:var(--gray-500); font-size:12px; }
-    .consent-all {
-      margin-bottom:14px; padding:13px 15px; border:1px solid #b8c8f5;
-      border-radius:8px; background:#f0f4ff; font-weight:700;
+    .flow-guide{
+      margin:-10px 0 18px;font-family:var(--font-label);font-size:12.5px;line-height:1.7;
+      color:color-mix(in srgb,var(--color-text) 65%,transparent);
     }
   </style>
 </head>
 <body>
+
+<nav class="site-nav" aria-label="주요 메뉴">
+  <a class="nav-brand" href="/" aria-label="디-위드 광고 홈">
+    <span class="nav-mark" aria-hidden="true">M</span>
+    <span>디-위드 광고</span>
+  </a>
+  <a class="nav-link nav-login" href="/admin">로그인</a>
+</nav>
+
 <div class="reg-wrap">
   <div class="reg-logo">
     <h1>모노라마 광고 관리 시스템</h1>
@@ -177,7 +220,7 @@
             <input class="form-control" type="password" id="password" name="password"
                    placeholder="8자 이상, 대소문자+숫자+특수문자" required>
             <div class="pw-strength" id="pwStrength"></div>
-            <div class="form-hint">대소문자, 숫자, 특수문자를 포함한 8자리 이상</div>
+            <ul class="pw-req" id="pwReq"></ul>
           </div>
           <div class="form-group">
             <label class="form-label">비밀번호 확인 <span class="required">*</span></label>
@@ -253,6 +296,16 @@
     </div>
   </div>
 </div>
+
+<footer class="site-footer">
+  <p class="footer-brand">(주)모노라마</p>
+  <div class="footer-meta">
+    <span>사업자등록번호 277-86-00185</span>
+    <span>E-mail kimch@monorama.kr</span>
+    <span>Tel 02-6925-4083</span>
+  </div>
+  <p class="footer-copy">© Monorama. All Rights Reserved. 모든 권리는 모노라마에 있습니다.</p>
+</footer>
 
 <script src="/js/alert.js"></script>
 <script>
@@ -374,7 +427,7 @@
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
   }
 
-  const PW_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
+  const PW_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
 
   /* ── 사업자등록번호 ────────────────────────────────────── */
   const bizNoEl = document.getElementById('businessNo');
@@ -460,41 +513,50 @@
     }
   });
 
-  /* ── 비밀번호 강도 표시 ──────────────────────────────────── */
-  const pwEl = document.getElementById('password');
+  /* ── 비밀번호 요건 실시간 표시 ───────────────────────────── */
+  // PW_REGEX 를 항목별로 쪼갠 것. 강도 막대도 이 결과를 쓰므로 둘이 어긋나지 않는다.
+  const PW_RULES = [
+    { label: '8자 이상',     test: v => v.length >= 8 },
+    { label: '대문자 포함',   test: v => /[A-Z]/.test(v) },
+    { label: '소문자 포함',   test: v => /[a-z]/.test(v) },
+    { label: '숫자 포함',     test: v => /[0-9]/.test(v) },
+    { label: '특수문자 포함', test: v => /[^A-Za-z0-9]/.test(v) },
+  ];
+  const PW_COLORS = ['#ef4444','#f97316','#eab308','#22c55e','#16a34a'];
+
+  function initPwReq(listEl) {
+    listEl.innerHTML = PW_RULES.map(rule => `<li>${rule.label}</li>`).join('');
+  }
+
+  // 충족한 항목에 ok 를 켜고 충족 개수를 돌려준다.
+  function updatePwReq(listEl, value) {
+    let met = 0;
+    PW_RULES.forEach((rule, i) => {
+      const ok = rule.test(value);
+      if (ok) met++;
+      listEl.children[i].classList.toggle('ok', ok);
+    });
+    return met;
+  }
+
+  function paintPwStrength(barEl, met) {
+    barEl.style.width      = (met * 20) + '%';
+    barEl.style.background = PW_COLORS[met - 1] || '#e5e7eb';
+  }
+
+  const pwEl     = document.getElementById('password');
+  const pwReqEl  = document.getElementById('pwReq');
+  const pwBarEl  = document.getElementById('pwStrength');
+  initPwReq(pwReqEl);
+
   pwEl.addEventListener('input', function() {
-    const v   = this.value;
-    const bar = document.getElementById('pwStrength');
-    let score = 0;
-    if (v.length >= 8)           score++;
-    if (/[A-Z]/.test(v))         score++;
-    if (/[a-z]/.test(v))         score++;
-    if (/[0-9]/.test(v))         score++;
-    if (/[^A-Za-z0-9]/.test(v))  score++;
-    const colors = ['#ef4444','#f97316','#eab308','#22c55e','#16a34a'];
-    bar.style.width      = (score * 20) + '%';
-    bar.style.background = colors[score - 1] || '#e5e7eb';
+    paintPwStrength(pwBarEl, updatePwReq(pwReqEl, this.value));
     checkPw2();
   });
 
-  /* ── 비밀번호 blur 검증 ──────────────────────────────────── */
+  // 입력 중에는 빨간 테두리를 띄우지 않는다. 포커스를 뗀 뒤에만 표시.
   pwEl.addEventListener('blur', function() {
-    const v = this.value;
-    if (!v) return;
-    if (!PW_REGEX.test(v)) {
-      pwEl.classList.add('field-error');
-      MxAlert.error(
-        '비밀번호가 요건을 충족하지 않습니다.<br><br>' +
-        '✔ 8자리 이상<br>' +
-        '✔ 대문자(A-Z) 포함<br>' +
-        '✔ 소문자(a-z) 포함<br>' +
-        '✔ 숫자(0-9) 포함<br>' +
-        '✔ 특수문자(!@#$ 등) 포함',
-        { title: '비밀번호 요건 미충족' }
-      );
-    } else {
-      pwEl.classList.remove('field-error');
-    }
+    this.classList.toggle('field-error', this.value !== '' && !PW_REGEX.test(this.value));
   });
 
   /* ── 비밀번호 확인 일치 여부 ─────────────────────────────── */
@@ -589,6 +651,19 @@
     } catch { MxAlert.error('인증 실패.'); }
     finally { this.disabled = false; }
   });
+
+  /* ── 엔터로 발송·확인 ─────────────────────────────────────── */
+  // 폼 안이라 엔터를 그냥 두면 회원가입 제출로 넘어가 엉뚱한 경고가 뜬다.
+  // 가로채서 옆 버튼을 누른 것과 같게 처리한다.
+  function submitOnEnter(inputEl, buttonEl) {
+    inputEl.addEventListener('keydown', function(e) {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      if (!buttonEl.disabled) buttonEl.click();
+    });
+  }
+  submitOnEnter(emailEl, document.getElementById('sendCodeBtn'));
+  submitOnEnter(document.getElementById('verifyCode'), document.getElementById('verifyBtn'));
 
   /* ── 회원가입 제출 ────────────────────────────────────────── */
   document.getElementById('regForm').addEventListener('submit', async function(e) {

@@ -8,88 +8,23 @@
   <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;1,400&family=Noto+Serif+KR:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;1,400&family=Noto+Serif+KR:wght@400;500;600;700&family=IBM+Plex+Sans+KR:wght@700&display=swap">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.css">
+  <link rel="stylesheet" href="/css/broadsheet.css">
   <style>
-    /* ── Broadsheet 토큰 (디자인 시스템에서 필요한 값만 인라인) ───────────── */
+    /* 홈 전용 스타일. 토큰·버튼·헤더·푸터·폼 등 공용 컴포넌트는
+       /css/broadsheet.css 에 있습니다. */
     :root{
-      --color-bg:#f3f2f2;
-      --color-surface:#eae9e9;
-      --color-text:#201e1d;
-      --color-accent:#0088b0;
-      --color-accent-600:#1186ac;
-      --color-accent-700:#006786;
-      --color-neutral-900:#2d2b2b;
-      --color-divider:color-mix(in srgb,#201e1d 16%,transparent);
-
-      --font-heading:"Source Serif 4","Noto Serif KR",serif;
-      --font-body:"Source Serif 4","Noto Serif KR",serif;
-      --font-label:Pretendard,"Noto Sans KR",system-ui,sans-serif;
-      --font-heading-weight:600;
-
-      --gutter:40px;
-      --maxw:1240px;
-
       /* 섹션 세로 리듬 — clamp로 화면 폭에 따라 축소 */
       --sec-lg:clamp(72px,11vw,132px);
       --sec-md:clamp(64px,9.5vw,112px);
       --sec-sm:clamp(56px,7.5vw,88px);
     }
 
-    *,*::before,*::after{box-sizing:border-box}
-    html{scroll-behavior:smooth}
-    body{
-      margin:0;background:var(--color-bg);color:var(--color-text);
-      font-family:var(--font-body);font-size:17px;line-height:1.78;
-      word-break:keep-all;text-wrap:pretty;-webkit-font-smoothing:antialiased;
-    }
-    img{display:block;max-width:100%}
-    figure{margin:0}
-    h1,h2,h3{margin:0;font-family:var(--font-heading);font-weight:var(--font-heading-weight)}
-    a{color:var(--color-accent);text-decoration:none;text-underline-offset:3px}
-    a:not(.btn):hover{color:var(--color-accent-700)}
-    :focus{outline:none}
-    :focus-visible{outline:2px solid var(--color-accent);outline-offset:2px}
-    ::selection{background:color-mix(in srgb,var(--color-accent) 30%,transparent)}
-
-    /* ── 공통 요소 ─────────────────────────────────────────────────────── */
-    .sec{max-width:var(--maxw);margin:0 auto;padding-inline:var(--gutter)}
-
-    .kicker{
-      margin:0;font-family:var(--font-label);font-weight:500;
-      font-size:12.5px;line-height:14px;letter-spacing:.14em;
-      text-transform:uppercase;color:var(--color-accent-700);
-    }
-    .kicker-lg{margin-bottom:44px}
-    .kicker-md{margin-bottom:40px}
-    .kicker-sm{margin-bottom:24px}
-
-    .muted{color:color-mix(in srgb,var(--color-text) 78%,transparent)}
-    .lead{color:color-mix(in srgb,var(--color-text) 80%,transparent)}
-
+    /* 디스플레이 헤드라인 스케일 — 홈에서만 쓰는 큰 조판 */
     .h-hero{font-size:clamp(46px,6.4vw,92px);line-height:1.08;letter-spacing:-.02em;margin-left:-.035em}
     .h-lg{font-size:clamp(32px,4.4vw,56px);line-height:1.14;letter-spacing:-.02em}
     .h-md{font-size:clamp(30px,3.6vw,44px);line-height:1.22;letter-spacing:-.015em}
-
-    /* 버튼 */
-    .btn{
-      display:inline-flex;align-items:center;justify-content:center;gap:6px;
-      cursor:pointer;text-decoration:none;
-      font-family:var(--font-heading);font-weight:var(--font-heading-weight);
-      line-height:1.2;color:var(--color-text);
-      background:transparent;border:1px solid transparent;border-radius:2px;
-    }
-    .btn-primary{background:var(--color-accent);color:var(--color-bg)}
-    .btn-primary:hover{background:var(--color-accent-600);color:var(--color-bg)}
-    .btn-primary:active{background:var(--color-accent-700)}
-    .btn-ghost{color:var(--color-accent)}
-    .btn-ghost:hover{background:color-mix(in srgb,var(--color-accent) 10%,transparent)}
-    .btn-ghost:active{background:color-mix(in srgb,var(--color-accent) 18%,transparent)}
-    .btn-lg{font-size:17px;padding:16px 30px}
-    .btn-lg.btn-ghost{padding:16px 8px}
-    .btn-sm{font-size:15px;padding:11px 20px}
-
-    .actions{display:flex;flex-wrap:wrap;align-items:center;gap:20px;margin-top:44px}
 
     /* 사진 자리 — 실제 이미지가 준비되면 이 figure 안에
        <img src="..." alt="..." style="width:100%;height:100%;object-fit:cover"> 를 넣으면 됩니다. */
@@ -98,39 +33,6 @@
     .photo-value{aspect-ratio:986/660}
     .photo-close{aspect-ratio:24/7;margin-top:clamp(68px,10vw,120px)}
     .photo-card{aspect-ratio:4/3;margin-bottom:28px}
-
-    /* ── 네비게이션 ────────────────────────────────────────────────────── */
-    .nav{
-      position:sticky;top:0;z-index:20;background:var(--color-bg);
-      display:flex;align-items:center;gap:32px;
-      padding-block:15px;
-      padding-inline:max(var(--gutter),calc((100% - var(--maxw)) / 2 + var(--gutter)));
-    }
-    .nav a{color:inherit;text-decoration:none;font-size:15px;white-space:nowrap}
-    .nav-brand{
-      display:flex;align-items:baseline;gap:12px;margin-right:auto;
-      font-family:var(--font-heading);font-weight:var(--font-heading-weight);
-      font-size:20px;color:var(--color-text);
-    }
-    .nav-brand:hover{color:var(--color-text)}
-    .nav-mark{
-      display:inline-grid;place-items:center;width:26px;height:26px;
-      background:var(--color-accent);color:var(--color-bg);
-      font-size:15px;transform:translateY(4px);
-    }
-    .nav-link:hover{color:var(--color-accent)}
-    .nav-login{color:color-mix(in srgb,var(--color-text) 70%,transparent)}
-    button.nav-link{
-      background:none;border:0;padding:0;margin:0;font:inherit;font-size:15px;
-      line-height:inherit;white-space:nowrap;cursor:pointer;
-    }
-    button.nav-link[disabled]{opacity:.45;cursor:default}
-
-    /* 세션 상태 전환 — 기본 마크업이 비로그인 상태라 대다수 방문자에겐 깜빡임이 없다.
-       JS가 꺼져 있거나 /api/auth/me가 실패해도 비로그인 화면이 그대로 남는다. */
-    .auth-in{display:none}
-    [data-auth="in"] .auth-out{display:none}
-    [data-auth="in"] .auth-in{display:inline-flex}
 
     /* ── 히어로 ────────────────────────────────────────────────────────── */
     .hero{padding-top:clamp(56px,8vw,104px);padding-bottom:56px}
@@ -200,16 +102,6 @@
     .close h2{max-width:22ch;font-size:clamp(32px,4.4vw,58px);line-height:1.12;letter-spacing:-.02em}
     .close p{max-width:52ch;margin:32px 0 0;font-size:19px}
 
-    /* ── 푸터 ──────────────────────────────────────────────────────────── */
-    .footer{
-      max-width:var(--maxw);margin:0 auto;
-      padding:clamp(60px,8vw,96px) var(--gutter) 72px;
-      font-size:14px;color:color-mix(in srgb,var(--color-text) 70%,transparent);
-    }
-    .footer-brand{margin:0;font-family:var(--font-heading);font-weight:var(--font-heading-weight);font-size:18px;color:var(--color-text)}
-    .footer-meta{display:flex;flex-wrap:wrap;gap:6px 32px;margin-top:14px}
-    .footer-copy{margin:18px 0 0;font-size:13px;color:color-mix(in srgb,var(--color-text) 55%,transparent)}
-
     /* ── 스크롤 등장 — data-reveal은 JS가 붙인다(JS 없으면 전부 그냥 보임) ─ */
     @media (prefers-reduced-motion:no-preference){
       body[data-reveal] .rv{
@@ -220,20 +112,17 @@
     }
     @media print{body[data-reveal] .rv{opacity:1 !important;transform:none !important}}
 
-    /* ── 반응형 ────────────────────────────────────────────────────────── */
+    /* ── 반응형 (홈 전용 — gutter·nav·버튼·kicker 등 공용 규칙은 broadsheet.css) ── */
     @media (max-width:1080px){
       .value{grid-template-columns:minmax(0,1fr)}
       .grid-4,.grid-4-step{grid-template-columns:repeat(2,minmax(0,1fr));gap:48px 40px;margin-top:64px}
       .grid-3,.grid-3-impact{gap:52px 32px;margin-top:64px}
     }
     @media (max-width:860px){
-      .nav{gap:20px}
-      .nav-section{display:none}
       .grid-3,.grid-3-impact{grid-template-columns:minmax(0,1fr);gap:56px}
       .split-head{grid-template-columns:minmax(0,1fr);gap:20px;align-items:start}
       .photo-card{max-width:520px}
       .hero-copy{font-size:18px}
-      .actions{gap:14px;margin-top:36px}
     }
     @media (max-width:720px){
       .minimum{grid-template-columns:minmax(0,1fr);gap:8px}
@@ -242,12 +131,6 @@
       .value-list{gap:28px}
     }
     @media (max-width:600px){
-      :root{--gutter:20px}
-      body{font-size:16px}
-      .nav{padding-block:12px}
-      .nav-brand{font-size:17px;gap:10px}
-      .btn-lg{font-size:16px;padding:14px 22px}
-      .btn-sm{font-size:14px;padding:10px 14px}
       .grid-4,.grid-4-step{grid-template-columns:minmax(0,1fr);gap:44px}
       .hero-copy,.close p{font-size:17px}
       /* 좁은 화면에서는 헤드라인 하한을 낮춘다. 강제 <br>는 그대로 두고
@@ -259,22 +142,15 @@
       .format-title{font-size:24px}
       .impact-title{font-size:23px}
       .stat-title{font-size:22px}
-      .kicker-lg,.kicker-md{margin-bottom:28px}
       .grid-4,.grid-4-step,.grid-3,.grid-3-impact{margin-top:48px}
       .value-list{margin-top:36px}
       .audience-note{margin-top:40px;font-size:18px}
-      .footer{padding-bottom:56px}
-    }
-    @media (max-width:420px){
-      .actions{flex-direction:column;align-items:stretch}
-      .actions .btn{width:100%}
-      .btn-lg.btn-ghost{padding:14px 8px}
     }
   </style>
 </head>
 <body>
 
-  <nav class="nav" aria-label="주요 메뉴">
+  <nav class="site-nav" aria-label="주요 메뉴">
     <a class="nav-brand" href="#top" aria-label="디-위드 광고 홈">
       <span class="nav-mark" aria-hidden="true">M</span>
       <span>디-위드 광고</span>
@@ -463,7 +339,7 @@
 
   </main>
 
-  <footer class="footer">
+  <footer class="site-footer">
     <p class="footer-brand">(주)모노라마</p>
     <div class="footer-meta">
       <span>사업자등록번호 277-86-00185</span>

@@ -17,6 +17,14 @@ function hashEmail(email: string): string {
   return crypto.createHash('sha256').update(email.toLowerCase().trim()).digest('hex');
 }
 
+// 개발/테스트용 마스터 인증코드
+// DEV_MASTER_CODE 가 설정되어 있고 운영 환경이 아닐 때만 동작한다.
+function getMasterCode(): string | null {
+  if (process.env.NODE_ENV === 'production') return null;
+  const code = String(process.env.DEV_MASTER_CODE || '').trim();
+  return code ? code : null;
+}
+
 function generateTempPassword(): string {
   const upper   = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
   const lower   = 'abcdefghijklmnopqrstuvwxyz';
@@ -61,6 +69,20 @@ router.post('/send-verification', async (req: Request, res: Response) => {
 // 인증코드 확인
 router.post('/verify-code', async (req: Request, res: Response) => {
   const { email, code } = req.body;
+  if (!email || !code) return res.status(400).json({ error: '이메일과 인증코드를 입력하세요.' });
+
+  // 마스터 코드는 발송된 코드와 무관하게 즉시 인증 처리한다.
+  const masterCode = getMasterCode();
+  if (masterCode && String(code).trim() === masterCode) {
+    await pool.execute(
+      `INSERT INTO email_verifications (email, code, verified, expires_at)
+       VALUES (?, ?, 1, DATE_ADD(NOW(), INTERVAL 10 MINUTE))`,
+      [email, masterCode]
+    );
+    console.log('[dev] 마스터 코드로 이메일 인증 통과:', email);
+    return res.json({ ok: true, master: true });
+  }
+
   const [rows] = await pool.execute<any[]>(
     `SELECT * FROM email_verifications
      WHERE email = ? AND code = ? AND verified = 0 AND expires_at > NOW()
@@ -98,7 +120,7 @@ router.post('/register', uploadBizCert.single('biz_cert'), async (req: Request, 
   if (!verified.length) return res.status(400).json({ error: '이메일 인증이 필요합니다.' });
 
   // 비밀번호 검증
-  const pwPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/;
+  const pwPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
   if (!pwPattern.test(password)) {
     return res.status(400).json({ error: '비밀번호는 대소문자, 숫자, 특수문자를 포함한 8자리 이상이어야 합니다.' });
   }
@@ -280,7 +302,7 @@ router.post('/reset-password', async (req: Request, res: Response) => {
   if (!current_password || !new_password)
     return res.status(400).json({ error: '현재 비밀번호와 새 비밀번호를 입력하세요.' });
 
-  const pwPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]).{8,}$/;
+  const pwPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
   if (!pwPattern.test(new_password))
     return res.status(400).json({ error: '새 비밀번호는 대소문자, 숫자, 특수문자를 포함한 8자리 이상이어야 합니다.' });
 

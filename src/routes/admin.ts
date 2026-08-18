@@ -42,10 +42,21 @@ function bizCertContentType(filePath: string): string {
 router.post('/login', async (req: Request, res: Response, next: NextFunction) => {
  try {
   const { username, password } = req.body;
-  if (username !== process.env.SUPERVISOR_USERNAME) {
+
+  // 관리자 계정은 .env 값과 직접 대조한다. 환경변수가 비어 있으면
+  // 빈 아이디·빈 비밀번호가 그대로 일치해 로그인이 통과되므로,
+  // 값이 설정되지 않은 경우에는 인증 자체를 거부한다.
+  const adminUsername = process.env.SUPERVISOR_USERNAME;
+  const adminPassword = process.env.SUPERVISOR_PASSWORD;
+  if (!adminUsername || !adminPassword) {
+    console.error('[admin] SUPERVISOR_USERNAME / SUPERVISOR_PASSWORD 가 설정되지 않아 로그인을 거부했습니다.');
+    return res.status(503).json({ error: '관리자 계정이 설정되지 않았습니다. 서버 관리자에게 문의하세요.' });
+  }
+
+  if (typeof username !== 'string' || typeof password !== 'string') {
     return res.status(401).json({ error: '아이디 또는 비밀번호가 올바르지 않습니다.' });
   }
-  if (password !== process.env.SUPERVISOR_PASSWORD) {
+  if (username !== adminUsername || password !== adminPassword) {
     return res.status(401).json({ error: '아이디 또는 비밀번호가 올바르지 않습니다.' });
   }
 
