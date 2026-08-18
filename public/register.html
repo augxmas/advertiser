@@ -7,7 +7,7 @@
   <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;1,400&family=Noto+Serif+KR:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;1,400&family=Noto+Serif+KR:wght@400;500;600;700&family=IBM+Plex+Sans+KR:wght@700&display=swap">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard-dynamic-subset.css">
   <link rel="stylesheet" href="/css/broadsheet.css">
   <!-- 카카오 주소 검색 API -->
@@ -36,6 +36,17 @@
 
     /* 높이·색은 JS가 강도에 따라 인라인으로 덮어쓴다 */
     .pw-strength{height:3px;margin-top:8px;background:var(--color-surface);transition:all .3s}
+
+    /* 비밀번호 요건 실시간 체크리스트 */
+    .pw-req{margin:8px 0 0;padding:0;list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:1px 12px}
+    .pw-req li{
+      display:flex;align-items:center;gap:5px;
+      font-family:var(--font-label,inherit);font-size:12px;line-height:1.75;
+      color:var(--gray-500,#6b7280);transition:color .15s;
+    }
+    .pw-req li::before{content:'○';flex:none;width:12px;text-align:center;font-size:10px}
+    .pw-req li.ok{color:var(--success,#16a34a)}
+    .pw-req li.ok::before{content:'✓';font-size:12px}
 
     .consent-box{padding:18px;background:var(--color-surface)}
     .consent-box .consent-text{
@@ -209,7 +220,7 @@
             <input class="form-control" type="password" id="password" name="password"
                    placeholder="8자 이상, 대소문자+숫자+특수문자" required>
             <div class="pw-strength" id="pwStrength"></div>
-            <div class="form-hint">대소문자, 숫자, 특수문자를 포함한 8자리 이상</div>
+            <ul class="pw-req" id="pwReq"></ul>
           </div>
           <div class="form-group">
             <label class="form-label">비밀번호 확인 <span class="required">*</span></label>
@@ -416,7 +427,7 @@
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
   }
 
-  const PW_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]).{8,}$/;
+  const PW_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}$/;
 
   /* ── 사업자등록번호 ────────────────────────────────────── */
   const bizNoEl = document.getElementById('businessNo');
@@ -502,41 +513,50 @@
     }
   });
 
-  /* ── 비밀번호 강도 표시 ──────────────────────────────────── */
-  const pwEl = document.getElementById('password');
+  /* ── 비밀번호 요건 실시간 표시 ───────────────────────────── */
+  // PW_REGEX 를 항목별로 쪼갠 것. 강도 막대도 이 결과를 쓰므로 둘이 어긋나지 않는다.
+  const PW_RULES = [
+    { label: '8자 이상',     test: v => v.length >= 8 },
+    { label: '대문자 포함',   test: v => /[A-Z]/.test(v) },
+    { label: '소문자 포함',   test: v => /[a-z]/.test(v) },
+    { label: '숫자 포함',     test: v => /[0-9]/.test(v) },
+    { label: '특수문자 포함', test: v => /[^A-Za-z0-9]/.test(v) },
+  ];
+  const PW_COLORS = ['#ef4444','#f97316','#eab308','#22c55e','#16a34a'];
+
+  function initPwReq(listEl) {
+    listEl.innerHTML = PW_RULES.map(rule => `<li>${rule.label}</li>`).join('');
+  }
+
+  // 충족한 항목에 ok 를 켜고 충족 개수를 돌려준다.
+  function updatePwReq(listEl, value) {
+    let met = 0;
+    PW_RULES.forEach((rule, i) => {
+      const ok = rule.test(value);
+      if (ok) met++;
+      listEl.children[i].classList.toggle('ok', ok);
+    });
+    return met;
+  }
+
+  function paintPwStrength(barEl, met) {
+    barEl.style.width      = (met * 20) + '%';
+    barEl.style.background = PW_COLORS[met - 1] || '#e5e7eb';
+  }
+
+  const pwEl     = document.getElementById('password');
+  const pwReqEl  = document.getElementById('pwReq');
+  const pwBarEl  = document.getElementById('pwStrength');
+  initPwReq(pwReqEl);
+
   pwEl.addEventListener('input', function() {
-    const v   = this.value;
-    const bar = document.getElementById('pwStrength');
-    let score = 0;
-    if (v.length >= 8)           score++;
-    if (/[A-Z]/.test(v))         score++;
-    if (/[a-z]/.test(v))         score++;
-    if (/[0-9]/.test(v))         score++;
-    if (/[^A-Za-z0-9]/.test(v))  score++;
-    const colors = ['#ef4444','#f97316','#eab308','#22c55e','#16a34a'];
-    bar.style.width      = (score * 20) + '%';
-    bar.style.background = colors[score - 1] || '#e5e7eb';
+    paintPwStrength(pwBarEl, updatePwReq(pwReqEl, this.value));
     checkPw2();
   });
 
-  /* ── 비밀번호 blur 검증 ──────────────────────────────────── */
+  // 입력 중에는 빨간 테두리를 띄우지 않는다. 포커스를 뗀 뒤에만 표시.
   pwEl.addEventListener('blur', function() {
-    const v = this.value;
-    if (!v) return;
-    if (!PW_REGEX.test(v)) {
-      pwEl.classList.add('field-error');
-      MxAlert.error(
-        '비밀번호가 요건을 충족하지 않습니다.<br><br>' +
-        '✔ 8자리 이상<br>' +
-        '✔ 대문자(A-Z) 포함<br>' +
-        '✔ 소문자(a-z) 포함<br>' +
-        '✔ 숫자(0-9) 포함<br>' +
-        '✔ 특수문자(!@#$ 등) 포함',
-        { title: '비밀번호 요건 미충족' }
-      );
-    } else {
-      pwEl.classList.remove('field-error');
-    }
+    this.classList.toggle('field-error', this.value !== '' && !PW_REGEX.test(this.value));
   });
 
   /* ── 비밀번호 확인 일치 여부 ─────────────────────────────── */
@@ -631,6 +651,19 @@
     } catch { MxAlert.error('인증 실패.'); }
     finally { this.disabled = false; }
   });
+
+  /* ── 엔터로 발송·확인 ─────────────────────────────────────── */
+  // 폼 안이라 엔터를 그냥 두면 회원가입 제출로 넘어가 엉뚱한 경고가 뜬다.
+  // 가로채서 옆 버튼을 누른 것과 같게 처리한다.
+  function submitOnEnter(inputEl, buttonEl) {
+    inputEl.addEventListener('keydown', function(e) {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      if (!buttonEl.disabled) buttonEl.click();
+    });
+  }
+  submitOnEnter(emailEl, document.getElementById('sendCodeBtn'));
+  submitOnEnter(document.getElementById('verifyCode'), document.getElementById('verifyBtn'));
 
   /* ── 회원가입 제출 ────────────────────────────────────────── */
   document.getElementById('regForm').addEventListener('submit', async function(e) {

@@ -17,6 +17,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;500;600;700&display=swap');
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@700&display=swap');
 
 :root {
   --color-bg: #f3f2f2;
@@ -60,6 +61,10 @@
   --font-heading-weight: 600;
   --font-body: "Source Serif 4", "Noto Serif KR", serif;
   --lbl: Pretendard, 'Noto Sans KR', sans-serif;
+
+  /* 브랜드 락업 전용 — 공개 페이지(broadsheet.css)와 같은 값.
+     본문 세리프와 대비시켜 로고타입처럼 읽히게 한다. */
+  --font-brand: "IBM Plex Sans KR", Pretendard, "Noto Sans KR", sans-serif;
 
   --hair: color-mix(in srgb, var(--color-text) 14%, transparent);
   --line: color-mix(in srgb, var(--color-text) 28%, transparent);
@@ -138,17 +143,19 @@ button { font: inherit; }
   display: flex; align-items: center; justify-content: space-between;
   gap: 24px; height: 74px;
 }
+/* 마크와 로고타입은 수직 중앙으로 맞춘다. 베이스라인 정렬 + translateY
+   보정으로 눈대중을 맞추면 서체나 크기가 바뀔 때마다 다시 어긋난다. */
 .brand {
-  display: inline-flex; align-items: baseline; gap: 11px;
+  display: inline-flex; align-items: center; gap: 11px;
   color: var(--color-text); text-decoration: none;
-  font-family: var(--font-heading); font-weight: var(--font-heading-weight);
-  font-size: 19px; letter-spacing: -.02em;
+  font-family: var(--font-brand); font-weight: 700;
+  font-size: 19px; line-height: 1; letter-spacing: -.01em;
 }
 .brand .mark {
   display: inline-grid; place-items: center; flex: none;
   width: 26px; height: 26px;
   background: var(--color-accent); color: var(--color-bg);
-  font-size: 15px; transform: translateY(4px);
+  font-family: var(--font-brand); font-weight: 700; font-size: 14px; line-height: 1;
 }
 .header-actions { display: flex; align-items: center; gap: 18px; }
 .header-actions .username { font-family: var(--font-heading); font-size: 16px; }

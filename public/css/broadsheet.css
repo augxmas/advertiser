@@ -35,6 +35,11 @@
   --font-label:Pretendard,"Noto Sans KR",system-ui,sans-serif;
   --font-heading-weight:600;
 
+  /* 브랜드 락업 전용. 본문 세리프와 일부러 대비시켜 로고타입처럼
+     읽히게 한다. IBM Plex Sans KR 은 기업 아이덴티티용으로 설계된
+     서체라 한글 자소가 고르게 서고 작은 크기에서도 형태가 버틴다. */
+  --font-brand:"IBM Plex Sans KR",Pretendard,"Noto Sans KR",sans-serif;
+
   /* ── 레이아웃 ───────────────────────────────────────── */
   --gutter:40px;
   --maxw:1240px;
@@ -107,16 +112,20 @@ a:not(.btn):hover{color:var(--color-accent-700)}
   padding-inline:max(var(--gutter),calc((100% - var(--maxw)) / 2 + var(--gutter)));
 }
 .site-nav a{color:inherit;text-decoration:none;font-size:15px;white-space:nowrap}
-.nav-brand{
-  display:flex;align-items:baseline;gap:12px;margin-right:auto;
-  font-family:var(--font-heading);font-weight:var(--font-heading-weight);
-  font-size:20px;color:var(--color-text);
+/* 마크와 로고타입은 수직 중앙으로 맞춘다. 베이스라인 정렬 + translateY
+   보정으로 눈대중을 맞추면 서체나 크기가 바뀔 때마다 다시 어긋난다. */
+/* `.site-nav a` 가 (0,1,1) 로 링크 전체에 15px 을 걸기 때문에, 브랜드는
+   (0,2,0) 으로 올려야 자기 크기를 지킬 수 있다. 클래스만 쓰면 진다. */
+.site-nav .nav-brand{
+  display:flex;align-items:center;gap:11px;margin-right:auto;
+  font-family:var(--font-brand);font-weight:700;
+  font-size:19px;line-height:1;letter-spacing:-.01em;color:var(--color-text);
 }
 .nav-brand:hover{color:var(--color-text)}
 .nav-mark{
   display:inline-grid;place-items:center;width:26px;height:26px;
   background:var(--color-accent);color:var(--color-bg);
-  font-size:15px;transform:translateY(4px);
+  font-family:var(--font-brand);font-weight:700;font-size:14px;line-height:1;
 }
 .nav-link:hover{color:var(--color-accent)}
 .nav-login{color:color-mix(in srgb,var(--color-text) 70%,transparent)}
